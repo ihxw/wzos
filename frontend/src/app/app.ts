@@ -5,6 +5,9 @@ import { Dock } from './components/dock/dock';
 import { DesktopIcon } from './components/desktop-icon/desktop-icon';
 import { DesktopApp } from './core/models/app.model';
 import { TerminalComponent } from './components/terminal/terminal';
+import { FileManagerComponent } from './components/file-manager/file-manager';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import 'winbox';
 
 declare const WinBox: any;
@@ -12,24 +15,27 @@ declare const WinBox: any;
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, TopBar, Dock, DesktopIcon],
+  imports: [CommonModule, TopBar, Dock, DesktopIcon, DragDropModule, NzDropDownModule],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
 export class App implements OnInit {
   
   apps: DesktopApp[] = [
-    { id: 'file-manager', name: 'Files', icon: 'ant-folder-open' },
-    { id: 'terminal', name: 'Terminal', icon: 'ant-code' },
-    { id: 'app-manager', name: 'App Manager', icon: 'ant-appstore' },
-    { id: 'system-settings', name: 'Settings', icon: 'ant-setting' },
-    { id: 'firewall', name: 'Firewall', icon: 'ant-security-scan' }
+    { id: 'file-manager', name: 'Files', icon: '/icon_files.png' },
+    { id: 'terminal', name: 'Terminal', icon: '/icon_terminal.png' },
+    { id: 'app-manager', name: 'App Manager', icon: '/icon_app_manager.png' },
+    { id: 'system-settings', name: 'System Settings', icon: '/icon_settings.png' },
+    { id: 'firewall', name: 'Firewall', icon: '/icon_firewall.png' }
   ];
 
   desktopApps: DesktopApp[] = [];
   dockApps: DesktopApp[] = [];
 
-  constructor(private viewContainerRef: ViewContainerRef) {}
+  constructor(
+    private viewContainerRef: ViewContainerRef,
+    private nzContextMenuService: NzContextMenuService
+  ) {}
 
   ngOnInit() {
     this.desktopApps = [...this.apps];
@@ -64,11 +70,27 @@ export class App implements OnInit {
     if (app.id === 'terminal') {
       componentRef = this.viewContainerRef.createComponent(TerminalComponent);
       winbox.body.appendChild(componentRef.location.nativeElement);
+    } else if (app.id === 'file-manager') {
+      // Set white background for file manager instead of dark terminal bg
+      winbox.setBackground('#f0f2f5'); 
+      componentRef = this.viewContainerRef.createComponent(FileManagerComponent);
+      winbox.body.appendChild(componentRef.location.nativeElement);
     } else {
       winbox.body.innerHTML = `<div style="padding: 20px; color: white; font-family: sans-serif;">
                                 <h3>${app.name}</h3>
                                 <p>This application is under construction.</p>
                                </div>`;
     }
+  }
+
+  contextMenu($event: MouseEvent, menu: NzDropdownMenuComponent): void {
+    $event.preventDefault(); // Prevent default browser context menu
+    this.nzContextMenuService.create($event, menu);
+  }
+
+  handleMenuAction(action: string): void {
+    console.log('Action selected:', action);
+    // Optionally trigger specific functionality here (e.g., refreshing, opening settings)
+    this.nzContextMenuService.close();
   }
 }

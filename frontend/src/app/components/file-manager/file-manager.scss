@@ -1,0 +1,62 @@
+.file-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(240, 240, 240, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+  .path-input {
+    flex: 1;
+    margin: 0 10px;
+    
+    input {
+      width: 100%;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      &:focus {
+        background: #fff;
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      }
+    }
+  }
+}
+
+.file-content {
+  flex: 1;
+  overflow-y: auto;
+  
+  ::ng-deep .ant-table-wrapper {
+    height: 100%;
+    
+    .ant-table {
+      background: transparent;
+    }
+    .ant-table-thead > tr > th {
+      background: rgba(250, 250, 250, 0.9);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .ant-table-tbody > tr {
+      cursor: pointer;
+      &:hover > td {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      & > td {
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+      }
+    }
+  }
+}

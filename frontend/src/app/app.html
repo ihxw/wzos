@@ -1,11 +1,13 @@
-<div class="desktop">
+<div class="desktop" (contextmenu)="contextMenu($event, menu)">
   <app-top-bar></app-top-bar>
   
   <div class="desktop-content">
     <app-desktop-icon 
       *ngFor="let app of desktopApps" 
       [app]="app" 
-      (onOpen)="openApp($event)">
+      (onOpen)="openApp($event)"
+      cdkDrag
+      cdkDragBoundary=".desktop-content">
     </app-desktop-icon>
   </div>
 
@@ -14,3 +16,15 @@
     (onOpen)="openApp($event)">
   </app-dock>
 </div>
+
+<nz-dropdown-menu #menu="nzDropdownMenu">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    <li nz-menu-item (click)="handleMenuAction('New Folder')">新建文件夹</li>
+    <li nz-menu-item (click)="handleMenuAction('Get Info')">显示简介</li>
+    <li nz-menu-divider></li>
+    <li nz-menu-item (click)="handleMenuAction('Change Wallpaper')">更改桌面背景...</li>
+    <li nz-menu-divider></li>
+    <li nz-menu-item (click)="handleMenuAction('Refresh')">刷新</li>
+  </ul>
+</nz-dropdown-menu>
+

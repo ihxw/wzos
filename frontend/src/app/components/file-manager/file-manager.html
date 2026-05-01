@@ -1,0 +1,59 @@
+<div class="file-manager">
+  <!-- Toolbar -->
+  <div class="toolbar glass">
+    <button nz-button nzType="text" (click)="goUp()" [disabled]="currentPath === '/' && !isWindows || currentPath === 'C:\\'">
+      <i nz-icon nzType="arrow-up" nzTheme="outline"></i>
+    </button>
+    <div class="path-input">
+      <input nz-input [value]="currentPath" (keyup.enter)="loadFiles($any($event.target).value)" />
+    </div>
+    <button nz-button nzType="text" (click)="loadFiles(currentPath)">
+      <i nz-icon nzType="reload" nzTheme="outline"></i>
+    </button>
+    <nz-divider nzType="vertical"></nz-divider>
+    <button nz-button nzType="text" nz-dropdown [nzDropdownMenu]="newMenu">
+      <i nz-icon nzType="plus" nzTheme="outline"></i> 新建
+    </button>
+  </div>
+
+  <nz-dropdown-menu #newMenu="nzDropdownMenu">
+    <ul nz-menu>
+      <li nz-menu-item (click)="createNew(true)"><i nz-icon nzType="folder"></i> 文件夹</li>
+      <li nz-menu-item (click)="createNew(false)"><i nz-icon nzType="file"></i> 文件</li>
+    </ul>
+  </nz-dropdown-menu>
+
+  <!-- Content -->
+  <div class="file-content">
+    <nz-table #basicTable [nzData]="files" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>大小</th>
+          <th>修改日期</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of basicTable.data" (dblclick)="open(data)">
+          <td>
+            <i nz-icon [nzType]="data.isDir ? 'folder' : 'file'" nzTheme="twotone" [nzTwotoneColor]="data.isDir ? '#1890ff' : '#595959'" style="margin-right: 8px;"></i>
+            {{ data.name }}
+          </td>
+          <td>{{ data.isDir ? '--' : formatBytes(data.size) }}</td>
+          <td>{{ data.modTime | date:'yyyy-MM-dd HH:mm' }}</td>
+          <td>
+            <a nz-dropdown [nzDropdownMenu]="actionMenu" (click)="$event.stopPropagation(); selectedFile = data">操作 <i nz-icon nzType="down"></i></a>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+
+  <nz-dropdown-menu #actionMenu="nzDropdownMenu">
+    <ul nz-menu>
+      <li nz-menu-item (click)="renameFile()">重命名</li>
+      <li nz-menu-item nzDanger (click)="deleteFile()">删除</li>
+    </ul>
+  </nz-dropdown-menu>
+</div>
