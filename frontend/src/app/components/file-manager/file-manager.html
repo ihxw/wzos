@@ -1,59 +1,130 @@
-<div class="file-manager">
-  <!-- Toolbar -->
-  <div class="toolbar glass">
-    <button nz-button nzType="text" (click)="goUp()" [disabled]="currentPath === '/' && !isWindows || currentPath === 'C:\\'">
-      <i nz-icon nzType="arrow-up" nzTheme="outline"></i>
-    </button>
-    <div class="path-input">
-      <input nz-input [value]="currentPath" (keyup.enter)="loadFiles($any($event.target).value)" />
+<div class="mac-file-manager">
+  <!-- Sidebar -->
+  <aside class="mac-sidebar">
+    <div class="sidebar-section">
+      <h3>个人收藏</h3>
+      <ul>
+        <li *ngFor="let item of sidebarShortcuts" (click)="navigateTo(item.path)" [class.active]="currentPath === item.path">
+          <i nz-icon [nzType]="item.icon"></i> {{ item.name }}
+        </li>
+      </ul>
     </div>
-    <button nz-button nzType="text" (click)="loadFiles(currentPath)">
-      <i nz-icon nzType="reload" nzTheme="outline"></i>
-    </button>
-    <nz-divider nzType="vertical"></nz-divider>
-    <button nz-button nzType="text" nz-dropdown [nzDropdownMenu]="newMenu">
-      <i nz-icon nzType="plus" nzTheme="outline"></i> 新建
-    </button>
+    <div class="sidebar-section">
+      <h3>位置</h3>
+      <ul>
+        <li *ngFor="let item of locations" (click)="navigateTo(item.path)" [class.active]="currentPath === item.path">
+          <i nz-icon [nzType]="item.icon"></i> {{ item.name }}
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="mac-main" (click)="clearSelection()">
+    <!-- Toolbar -->
+    <header class="mac-toolbar">
+      <div class="toolbar-left">
+        <div class="nav-buttons">
+          <button nz-button nzType="text" nzSize="small" (click)="goBack()" [disabled]="!canGoBack()"><i nz-icon nzType="left"></i></button>
+          <button nz-button nzType="text" nzSize="small" (click)="goForward()" [disabled]="!canGoForward()"><i nz-icon nzType="right"></i></button>
+        </div>
+        <div class="current-dir-name">{{ currentDirName }}</div>
+      </div>
+      <div class="toolbar-center">
+        <div class="view-toggle">
+          <button nz-button nzType="default" nzSize="small" [class.active]="viewMode === 'icon'" (click)="viewMode = 'icon'"><i nz-icon nzType="appstore"></i></button>
+          <button nz-button nzType="default" nzSize="small" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'"><i nz-icon nzType="bars"></i></button>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button nz-button nzType="text" nzSize="small" nz-dropdown [nzDropdownMenu]="newMenu">
+          <i nz-icon nzType="plus"></i>
+        </button>
+        <div class="search-box">
+          <i nz-icon nzType="search"></i>
+          <input type="text" placeholder="搜索" [(ngModel)]="searchQuery" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Context Menus -->
+    <nz-dropdown-menu #newMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="createNew(true)"><i nz-icon nzType="folder"></i> 新建文件夹</li>
+        <li nz-menu-item (click)="createNew(false)"><i nz-icon nzType="file"></i> 新建文件</li>
+      </ul>
+    </nz-dropdown-menu>
+
+    <nz-dropdown-menu #fileMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="open(selectedFile!)">打开</li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item (click)="renameFile()">重命名</li>
+        <li nz-menu-item nzDanger (click)="deleteFile()">移至废纸篓</li>
+      </ul>
+    </nz-dropdown-menu>
+
+    <!-- Content Area -->
+    <div class="mac-content" [ngClass]="'view-' + viewMode">
+      
+      <!-- Icon View -->
+      <div *ngIf="viewMode === 'icon'" class="icon-view-container" (contextmenu)="$event.preventDefault()">
+        <div *ngFor="let file of filteredFiles" 
+             class="icon-item" 
+             [class.selected]="isSelected(file)"
+             (click)="toggleSelection(file, $event)"
+             (dblclick)="open(file)"
+             (contextmenu)="contextMenu($event, fileMenu, file)">
+          <div class="icon-wrapper">
+             <i nz-icon [nzType]="getFileIcon(file)" nzTheme="twotone" [nzTwotoneColor]="getFileIconColor(file)"></i>
+          </div>
+          <div class="icon-name" [title]="file.name">{{ file.name }}</div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div *ngIf="viewMode === 'list'" class="list-view-container" (contextmenu)="$event.preventDefault()">
+        <nz-table #listViewTable [nzData]="filteredFiles" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>修改日期</th>
+              <th>大小</th>
+              <th>种类</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let file of listViewTable.data" 
+                [class.selected]="isSelected(file)"
+                (click)="toggleSelection(file, $event)"
+                (dblclick)="open(file)"
+                (contextmenu)="contextMenu($event, fileMenu, file)">
+              <td>
+                <i nz-icon [nzType]="getFileIcon(file)" nzTheme="twotone" [nzTwotoneColor]="getFileIconColor(file)" style="margin-right: 8px; font-size: 16px;"></i>
+                {{ file.name }}
+              </td>
+              <td class="text-secondary">{{ file.modTime | date:'yyyy/MM/dd HH:mm' }}</td>
+              <td class="text-secondary">{{ file.isDir ? '--' : formatBytes(file.size) }}</td>
+              <td class="text-secondary">{{ file.isDir ? '文件夹' : '文稿' }}</td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </div>
+
+    </div>
+
+    <!-- Status Bar -->
+    <footer class="mac-status-bar">
+      <div class="breadcrumbs">
+        <nz-breadcrumb nzSeparator=">">
+          <nz-breadcrumb-item *ngFor="let crumb of getBreadcrumbs(); let last = last">
+            <span [class.active-crumb]="last">{{ crumb }}</span>
+          </nz-breadcrumb-item>
+        </nz-breadcrumb>
+      </div>
+      <div class="status-info">
+        {{ filteredFiles.length }} 个项目 <span *ngIf="selectedFiles.size > 0">, 已选中 {{ selectedFiles.size }} 个项目</span>
+      </div>
+    </footer>
   </div>
-
-  <nz-dropdown-menu #newMenu="nzDropdownMenu">
-    <ul nz-menu>
-      <li nz-menu-item (click)="createNew(true)"><i nz-icon nzType="folder"></i> 文件夹</li>
-      <li nz-menu-item (click)="createNew(false)"><i nz-icon nzType="file"></i> 文件</li>
-    </ul>
-  </nz-dropdown-menu>
-
-  <!-- Content -->
-  <div class="file-content">
-    <nz-table #basicTable [nzData]="files" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
-      <thead>
-        <tr>
-          <th>名称</th>
-          <th>大小</th>
-          <th>修改日期</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let data of basicTable.data" (dblclick)="open(data)">
-          <td>
-            <i nz-icon [nzType]="data.isDir ? 'folder' : 'file'" nzTheme="twotone" [nzTwotoneColor]="data.isDir ? '#1890ff' : '#595959'" style="margin-right: 8px;"></i>
-            {{ data.name }}
-          </td>
-          <td>{{ data.isDir ? '--' : formatBytes(data.size) }}</td>
-          <td>{{ data.modTime | date:'yyyy-MM-dd HH:mm' }}</td>
-          <td>
-            <a nz-dropdown [nzDropdownMenu]="actionMenu" (click)="$event.stopPropagation(); selectedFile = data">操作 <i nz-icon nzType="down"></i></a>
-          </td>
-        </tr>
-      </tbody>
-    </nz-table>
-  </div>
-
-  <nz-dropdown-menu #actionMenu="nzDropdownMenu">
-    <ul nz-menu>
-      <li nz-menu-item (click)="renameFile()">重命名</li>
-      <li nz-menu-item nzDanger (click)="deleteFile()">删除</li>
-    </ul>
-  </nz-dropdown-menu>
 </div>

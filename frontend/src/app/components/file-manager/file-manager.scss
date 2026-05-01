@@ -1,61 +1,325 @@
-.file-manager {
+.mac-file-manager {
   display: flex;
-  flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
-}
+  user-select: none;
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
-  background: rgba(240, 240, 240, 0.9);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  // macOS Sidebar
+  .mac-sidebar {
+    width: 200px;
+    background: rgba(246, 246, 246, 0.8);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding-top: 10px;
 
-  .path-input {
-    flex: 1;
-    margin: 0 10px;
-    
-    input {
-      width: 100%;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      &:focus {
-        background: #fff;
-        border-color: #1890ff;
-        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    .sidebar-section {
+      margin-bottom: 20px;
+
+      h3 {
+        padding: 0 16px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #8e8e93;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+          padding: 6px 16px;
+          display: flex;
+          align-items: center;
+          font-size: 13px;
+          cursor: pointer;
+          color: #444;
+          transition: background 0.2s;
+
+          i {
+            margin-right: 10px;
+            font-size: 16px;
+            color: #007aff; // macOS blue for icons
+          }
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.05);
+          }
+
+          &.active {
+            background: rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+          }
+        }
       }
     }
   }
+
+  // Main Content Area
+  .mac-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+
+    // Toolbar
+    .mac-toolbar {
+      height: 52px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      background: #fdfdfd;
+
+      .toolbar-left, .toolbar-right, .toolbar-center {
+        display: flex;
+        align-items: center;
+      }
+
+      .nav-buttons {
+        margin-right: 16px;
+        button {
+          padding: 0 4px;
+        }
+      }
+
+      .current-dir-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .view-toggle {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+
+        button {
+          border: none;
+          border-radius: 0;
+          background: #fff;
+          color: #666;
+          padding: 4px 10px;
+          
+          &.active {
+            background: #ebebeb;
+            color: #333;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+          }
+          &:not(:last-child) {
+            border-right: 1px solid rgba(0,0,0,0.1);
+          }
+        }
+      }
+
+      .search-box {
+        position: relative;
+        margin-left: 12px;
+        
+        i {
+          position: absolute;
+          left: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #999;
+          font-size: 12px;
+        }
+        
+        input {
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          border-radius: 6px;
+          padding: 2px 8px 2px 28px;
+          font-size: 12px;
+          width: 150px;
+          outline: none;
+          transition: width 0.3s;
+          
+          &:focus {
+            width: 200px;
+            border-color: #007aff;
+          }
+        }
+      }
+    }
+
+    // Content Body
+    .mac-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+
+      // Icon View
+      &.view-icon {
+        .icon-view-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          gap: 20px;
+          padding: 10px;
+
+          .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.1s;
+
+            .icon-wrapper {
+              font-size: 48px;
+              margin-bottom: 6px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 60px;
+            }
+
+            .icon-name {
+              font-size: 12px;
+              word-break: break-all;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              line-height: 1.2;
+              padding: 0 4px;
+              color: #333;
+            }
+
+            &:hover {
+              background: rgba(0, 0, 0, 0.05);
+            }
+
+            &.selected {
+              background: #007aff;
+              .icon-name {
+                color: #fff;
+              }
+              ::ng-deep i svg {
+                filter: brightness(1.2);
+              }
+            }
+          }
+        }
+      }
+
+      // List View
+      &.view-list {
+        padding: 0;
+        
+        ::ng-deep .ant-table-wrapper {
+          .ant-table {
+            background: transparent;
+          }
+          .ant-table-thead > tr > th {
+            background: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            padding: 4px 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            
+            &:first-child {
+              padding-left: 20px;
+            }
+          }
+          .ant-table-tbody > tr {
+            cursor: pointer;
+            
+            & > td {
+              padding: 4px 16px;
+              font-size: 13px;
+              border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+              
+              &:first-child {
+                padding-left: 20px;
+              }
+            }
+
+            &:hover > td {
+              background: rgba(0, 0, 0, 0.02) !important;
+            }
+
+            &.selected > td {
+              background: #007aff !important;
+              color: #fff !important;
+              .text-secondary {
+                color: rgba(255, 255, 255, 0.8) !important;
+              }
+              ::ng-deep i svg {
+                filter: brightness(1.2);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Status Bar
+    .mac-status-bar {
+      height: 24px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      background: #f6f6f6;
+      font-size: 11px;
+      color: #666;
+
+      .breadcrumbs {
+        ::ng-deep .ant-breadcrumb {
+          font-size: 11px;
+          .ant-breadcrumb-link {
+             color: #666;
+             &.active-crumb {
+               font-weight: 600;
+               color: #333;
+             }
+          }
+          .ant-breadcrumb-separator {
+            margin: 0 4px;
+            color: #ccc;
+          }
+        }
+      }
+    }
+  }
+
+  .text-secondary {
+    color: #888;
+  }
 }
 
-.file-content {
-  flex: 1;
-  overflow-y: auto;
-  
-  ::ng-deep .ant-table-wrapper {
-    height: 100%;
-    
-    .ant-table {
+// Global styles for macOS scrollbar (local to component)
+:host {
+  ::ng-deep {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
       background: transparent;
     }
-    .ant-table-thead > tr > th {
-      background: rgba(250, 250, 250, 0.9);
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .ant-table-tbody > tr {
-      cursor: pointer;
-      &:hover > td {
-        background: rgba(0, 0, 0, 0.04);
-      }
-      & > td {
-        border-bottom: 1px solid rgba(0,0,0,0.03);
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      
+      &:hover {
+        background: rgba(0, 0, 0, 0.2);
+        background-clip: padding-box;
       }
     }
   }
