@@ -4,16 +4,22 @@
     <div class="sidebar-section">
       <h3>个人收藏</h3>
       <ul>
-        <li *ngFor="let item of sidebarShortcuts" (click)="navigateTo(item.path)" [class.active]="currentPath === item.path">
-          <i nz-icon [nzType]="item.icon"></i> {{ item.name }}
+        <li *ngFor="let item of sidebarShortcuts" 
+            (click)="navigateTo(item.path)" 
+            [class.active]="currentPath === item.path">
+          <i nz-icon [nzType]="item.icon"></i>
+          <span>{{ item.name }}</span>
         </li>
       </ul>
     </div>
     <div class="sidebar-section">
       <h3>位置</h3>
       <ul>
-        <li *ngFor="let item of locations" (click)="navigateTo(item.path)" [class.active]="currentPath === item.path">
-          <i nz-icon [nzType]="item.icon"></i> {{ item.name }}
+        <li *ngFor="let item of locations" 
+            (click)="navigateTo(item.path)" 
+            [class.active]="currentPath === item.path">
+          <i nz-icon [nzType]="item.icon"></i>
+          <span>{{ item.name }}</span>
         </li>
       </ul>
     </div>
@@ -25,19 +31,32 @@
     <header class="mac-toolbar">
       <div class="toolbar-left">
         <div class="nav-buttons">
-          <button nz-button nzType="text" nzSize="small" (click)="goBack()" [disabled]="!canGoBack()"><i nz-icon nzType="left"></i></button>
-          <button nz-button nzType="text" nzSize="small" (click)="goForward()" [disabled]="!canGoForward()"><i nz-icon nzType="right"></i></button>
+          <button nz-button nzType="text" (click)="goBack()" [disabled]="!canGoBack()">
+            <i nz-icon nzType="left"></i>
+          </button>
+          <button nz-button nzType="text" (click)="goForward()" [disabled]="!canGoForward()">
+            <i nz-icon nzType="right"></i>
+          </button>
         </div>
         <div class="current-dir-name">{{ currentDirName }}</div>
       </div>
+
       <div class="toolbar-center">
         <div class="view-toggle">
-          <button nz-button nzType="default" nzSize="small" [class.active]="viewMode === 'icon'" (click)="viewMode = 'icon'"><i nz-icon nzType="appstore"></i></button>
-          <button nz-button nzType="default" nzSize="small" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'"><i nz-icon nzType="bars"></i></button>
+          <button [class.active]="viewMode === 'icon'" (click)="viewMode = 'icon'" title="图标视图">
+            <i nz-icon nzType="appstore"></i>
+          </button>
+          <button [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="列表视图">
+            <i nz-icon nzType="bars"></i>
+          </button>
+          <button [class.active]="viewMode === 'column'" (click)="viewMode = 'column'" title="分栏视图">
+            <i nz-icon nzType="project"></i>
+          </button>
         </div>
       </div>
+
       <div class="toolbar-right">
-        <button nz-button nzType="text" nzSize="small" nz-dropdown [nzDropdownMenu]="newMenu">
+        <button class="action-button" nz-dropdown [nzDropdownMenu]="newMenu">
           <i nz-icon nzType="plus"></i>
         </button>
         <div class="search-box">
@@ -65,7 +84,7 @@
     </nz-dropdown-menu>
 
     <!-- Content Area -->
-    <div class="mac-content" [ngClass]="'view-' + viewMode">
+    <div class="mac-content" [ngClass]="'view-' + viewMode" cdkDropList (cdkDropListDropped)="onDrop($event)">
       
       <!-- Icon View -->
       <div *ngIf="viewMode === 'icon'" class="icon-view-container" (contextmenu)="$event.preventDefault()">
@@ -74,11 +93,15 @@
              [class.selected]="isSelected(file)"
              (click)="toggleSelection(file, $event)"
              (dblclick)="open(file)"
-             (contextmenu)="contextMenu($event, fileMenu, file)">
+             (contextmenu)="contextMenu($event, fileMenu, file)"
+             cdkDrag [cdkDragData]="file">
           <div class="icon-wrapper">
-             <i nz-icon [nzType]="getFileIcon(file)" nzTheme="twotone" [nzTwotoneColor]="getFileIconColor(file)"></i>
+             <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
           </div>
           <div class="icon-name" [title]="file.name">{{ file.name }}</div>
+          
+          <!-- Drop zone for folders -->
+          <div *ngIf="file.isDir" class="folder-drop-zone" cdkDropList (cdkDropListDropped)="onDrop($event, file)"></div>
         </div>
       </div>
 
@@ -87,10 +110,10 @@
         <nz-table #listViewTable [nzData]="filteredFiles" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
           <thead>
             <tr>
-              <th>名称</th>
-              <th>修改日期</th>
-              <th>大小</th>
-              <th>种类</th>
+              <th (click)="setSort('name')">名称 <i nz-icon [nzType]="sortKey === 'name' ? (sortOrder === 'asc' ? 'up' : 'down') : ''"></i></th>
+              <th (click)="setSort('modTime')">修改日期 <i nz-icon [nzType]="sortKey === 'modTime' ? (sortOrder === 'asc' ? 'up' : 'down') : ''"></i></th>
+              <th (click)="setSort('size')">大小 <i nz-icon [nzType]="sortKey === 'size' ? (sortOrder === 'asc' ? 'up' : 'down') : ''"></i></th>
+              <th (click)="setSort('type')">种类 <i nz-icon [nzType]="sortKey === 'type' ? (sortOrder === 'asc' ? 'up' : 'down') : ''"></i></th>
             </tr>
           </thead>
           <tbody>
@@ -98,9 +121,10 @@
                 [class.selected]="isSelected(file)"
                 (click)="toggleSelection(file, $event)"
                 (dblclick)="open(file)"
-                (contextmenu)="contextMenu($event, fileMenu, file)">
+                (contextmenu)="contextMenu($event, fileMenu, file)"
+                cdkDrag [cdkDragData]="file">
               <td>
-                <i nz-icon [nzType]="getFileIcon(file)" nzTheme="twotone" [nzTwotoneColor]="getFileIconColor(file)" style="margin-right: 8px; font-size: 16px;"></i>
+                <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)" style="margin-right: 8px; font-size: 16px;"></i>
                 {{ file.name }}
               </td>
               <td class="text-secondary">{{ file.modTime | date:'yyyy/MM/dd HH:mm' }}</td>
@@ -111,6 +135,62 @@
         </nz-table>
       </div>
 
+      <!-- Column View -->
+      <div *ngIf="viewMode === 'column'" class="view-column">
+         <div class="column-panel">
+            <div *ngFor="let file of filteredFiles" 
+                 class="column-item" 
+                 [class.selected]="isSelected(file)"
+                 (click)="toggleSelection(file, $event)"
+                 (dblclick)="open(file)"
+                 (contextmenu)="contextMenu($event, fileMenu, file)"
+                 cdkDrag [cdkDragData]="file">
+               <div class="item-left">
+                  <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+                  <span>{{ file.name }}</span>
+               </div>
+               <div class="item-right" *ngIf="file.isDir">
+                  <i nz-icon nzType="right"></i>
+               </div>
+            </div>
+         </div>
+         <!-- Preview Column -->
+         <div class="column-panel preview-panel" *ngIf="selectedFile">
+            <div class="preview-content">
+               <div class="preview-icon">
+                  <i nz-icon [nzType]="getFileIcon(selectedFile)" [nzTheme]="getIconTheme(selectedFile)" [nzTwotoneColor]="getFileIconColor(selectedFile)"></i>
+               </div>
+               <h2 class="preview-title">{{ selectedFile.name }}</h2>
+               <div class="preview-type">{{ selectedFile.isDir ? '文件夹' : '文稿' }} - {{ formatBytes(selectedFile.size) }}</div>
+               <div class="preview-details">
+                  <div class="detail-row"><span class="label">修改日期:</span> {{ selectedFile.modTime | date:'yyyy/MM/dd HH:mm' }}</div>
+                  <div class="detail-row"><span class="label">路径:</span> {{ selectedFile.path }}</div>
+               </div>
+               <div class="preview-actions">
+                  <button nz-button nzType="primary" (click)="toggleQuickLook(selectedFile)">预览</button>
+               </div>
+            </div>
+         </div>
+      </div>
+    </div>
+
+    <!-- Quick Look Overlay -->
+    <div class="quick-look-overlay" *ngIf="showQuickLook" (click)="closeQuickLook()">
+      <div class="quick-look-window" (click)="$event.stopPropagation()">
+        <div class="ql-header">
+          <button class="close-btn" (click)="closeQuickLook()"><i nz-icon nzType="close"></i></button>
+          <span class="ql-title">{{ quickLookFile?.name }}</span>
+        </div>
+        <div class="ql-body">
+           <div class="ql-icon">
+              <i nz-icon [nzType]="getFileIcon(quickLookFile!)" [nzTheme]="getIconTheme(quickLookFile!)" [nzTwotoneColor]="getFileIconColor(quickLookFile!)"></i>
+           </div>
+           <div class="ql-info">
+              <h3>{{ quickLookFile?.name }}</h3>
+              <p>{{ formatBytes(quickLookFile?.size || 0) }}</p>
+           </div>
+        </div>
+      </div>
     </div>
 
     <!-- Status Bar -->

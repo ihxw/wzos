@@ -10,6 +10,8 @@ import (
 	"github.com/creack/pty"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/wzos/backend/db"
+	"github.com/wzos/backend/handlers"
 )
 
 var upgrader = websocket.Upgrader{
@@ -21,16 +23,25 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
+	// Initialize Database
+	db.InitDB()
+
 	r := gin.Default()
 
-	// CORS setup if needed
+	// CORS setup
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
 		c.Next()
 	})
 
 	r.GET("/api/ws/terminal", handleTerminalWebsocket)
-	setupFileRoutes(r)
+	handlers.RegisterFileRoutes(r)
 
 	log.Println("Backend server starting on :8080")
 	if err := r.Run(":8080"); err != nil {

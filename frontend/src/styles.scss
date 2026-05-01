@@ -12,9 +12,45 @@ html, body {
 
 /* Glassmorphism utility classes */
 .glass {
-  background: rgba(30, 30, 30, 0.4);
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* WinBox macOS Theme Customization */
+.winbox.modern {
+    background: #f6f6f6 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+
+    .wb-header {
+        background: rgba(246, 246, 246, 0.8) !important;
+        backdrop-filter: blur(20px) !important;
+        color: #333 !important;
+        height: 38px !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .wb-title {
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        color: #333 !important;
+        text-align: center !important;
+    }
+
+    .wb-body {
+        background: #fff !important;
+        border-radius: 0 0 12px 12px !important;
+    }
+
+    // macOS Window Control Buttons (traffic lights)
+    .wb-icon {
+        opacity: 0.8;
+        filter: invert(0);
+        &:hover { opacity: 1; }
+    }
 }

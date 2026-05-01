@@ -22,6 +22,10 @@ export class FileService {
     return this.http.get<FileInfo[]>(`${this.apiUrl}/list?path=${encodeURIComponent(path)}`);
   }
 
+  getFavorites(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/favorites`);
+  }
+
   deleteFile(path: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/delete`, { path });
   }
