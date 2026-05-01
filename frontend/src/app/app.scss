@@ -1,0 +1,22 @@
+.desktop {
+  width: 100vw;
+  height: 100vh;
+  /* Use the generated wallpaper or fallback to a nice CSS gradient */
+  background: url('/wallpaper.png') center/cover no-repeat,
+              linear-gradient(135deg, #1e1e1e, #3a3a3a);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.desktop-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 20px;
+  z-index: 1;
+}

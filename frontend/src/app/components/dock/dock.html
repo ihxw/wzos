@@ -1,0 +1,16 @@
+<div class="dock-container glass">
+  <div class="dock-items">
+    <div 
+      class="dock-item" 
+      *ngFor="let app of apps" 
+      (click)="open(app)"
+      [class.active]="app.isOpen">
+      <div class="icon-wrapper">
+        <i *ngIf="app.icon.startsWith('ant-')" nz-icon [nzType]="app.icon.replace('ant-', '')" nzTheme="outline"></i>
+        <img *ngIf="!app.icon.startsWith('ant-')" [src]="app.icon" [alt]="app.name" />
+      </div>
+      <div class="dot" *ngIf="app.isOpen"></div>
+      <div class="tooltip">{{ app.name }}</div>
+    </div>
+  </div>
+</div>

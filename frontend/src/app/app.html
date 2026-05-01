@@ -1,0 +1,16 @@
+<div class="desktop">
+  <app-top-bar></app-top-bar>
+  
+  <div class="desktop-content">
+    <app-desktop-icon 
+      *ngFor="let app of desktopApps" 
+      [app]="app" 
+      (onOpen)="openApp($event)">
+    </app-desktop-icon>
+  </div>
+
+  <app-dock 
+    [apps]="dockApps" 
+    (onOpen)="openApp($event)">
+  </app-dock>
+</div>
