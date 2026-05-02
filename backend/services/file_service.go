@@ -92,7 +92,21 @@ func ListFiles(dirPath string) ([]models.FileInfo, error) {
 }
 
 func GetFavorites() ([]models.Favorite, error) {
-	return repository.GetFavorites()
+	all, err := repository.GetFavorites()
+	if err != nil {
+		return nil, err
+	}
+	// Filter out favorites whose paths no longer exist
+	var valid []models.Favorite
+	for _, f := range all {
+		if _, err := os.Stat(f.Path); err == nil {
+			valid = append(valid, f)
+		}
+	}
+	if valid == nil {
+		valid = []models.Favorite{}
+	}
+	return valid, nil
 }
 
 func AddFavorite(f models.Favorite) error {

@@ -33,15 +33,12 @@ func seedData() {
 
 	if count == 0 {
 		home, _ := os.UserHomeDir()
-		if home == "" {
-			home = "/home/user"
-		}
 
 		favorites := []models.Favorite{
-			{Name: "桌面", Path: home + "/Desktop", Icon: "desktop"},
-			{Name: "文档", Path: home + "/Documents", Icon: "file-text"},
-			{Name: "下载", Path: home + "/Downloads", Icon: "download"},
-			{Name: "图片", Path: home + "/Pictures", Icon: "picture"},
+			{Name: "根目录", Path: "/", Icon: "hdd"},
+			{Name: "主目录", Path: home, Icon: "home"},
+			{Name: "系统配置", Path: "/etc", Icon: "setting"},
+			{Name: "日志", Path: "/var/log", Icon: "file-text"},
 		}
 
 		for _, f := range favorites {

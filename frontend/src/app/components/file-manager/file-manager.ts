@@ -769,6 +769,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // ===== Context Menu =====
   contextMenu($event: MouseEvent, menu: NzDropdownMenuComponent, file: FileInfo): void {
+    $event.preventDefault();
+    $event.stopPropagation();
     this.clearSelection();
     this.selectedFiles.add(file.path);
     this.nzContextMenuService.create($event, menu);
@@ -776,6 +778,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   onBlankAreaContextmenu($event: MouseEvent, menu: NzDropdownMenuComponent): void {
     $event.preventDefault();
+    $event.stopPropagation();
     this.clearSelection();
     this.nzContextMenuService.create($event, menu);
   }
