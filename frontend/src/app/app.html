@@ -1,24 +1,35 @@
-<div class="desktop" (contextmenu)="contextMenu($event, menu)">
+<app-login *ngIf="!isAuthenticated" (loginSuccess)="onLoginSuccess()"></app-login>
+
+<div class="desktop" *ngIf="isAuthenticated" (contextmenu)="contextMenu($event, menu)">
   <app-top-bar></app-top-bar>
-  
+
   <div class="desktop-content">
-    <app-desktop-icon 
-      *ngFor="let app of desktopApps" 
-      [app]="app" 
+    <app-desktop-icon
+      *ngFor="let app of desktopApps"
+      [app]="app"
       (onOpen)="openApp($event)"
       cdkDrag
       cdkDragBoundary=".desktop-content">
     </app-desktop-icon>
   </div>
 
-  <app-dock 
-    [apps]="dockApps" 
+  <app-dock
+    [apps]="dockApps"
     (onOpen)="openApp($event)">
   </app-dock>
+
+  <app-window-wrapper
+    *ngFor="let window of openWindows"
+    [windowState]="window"
+    (close)="closeWindow($event)"
+    (minimize)="minimizeWindow($event)"
+    (maximize)="maximizeWindow($event)"
+    (focus)="focusWindow($event)">
+  </app-window-wrapper>
 </div>
 
 <nz-dropdown-menu #menu="nzDropdownMenu">
-  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
     <li nz-menu-item (click)="handleMenuAction('New Folder')">新建文件夹</li>
     <li nz-menu-item (click)="handleMenuAction('Get Info')">显示简介</li>
     <li nz-menu-divider></li>
@@ -27,4 +38,3 @@
     <li nz-menu-item (click)="handleMenuAction('Refresh')">刷新</li>
   </ul>
 </nz-dropdown-menu>
-

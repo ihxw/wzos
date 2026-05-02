@@ -6,29 +6,15 @@ import (
 )
 
 func GetFavorites() ([]models.Favorite, error) {
-	rows, err := db.DB.Query("SELECT id, name, path, icon FROM favorites")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var favorites []models.Favorite
-	for rows.Next() {
-		var f models.Favorite
-		if err := rows.Scan(&f.ID, &f.Name, &f.Path, &f.Icon); err != nil {
-			return nil, err
-		}
-		favorites = append(favorites, f)
-	}
-	return favorites, nil
+	err := db.DB.Find(&favorites).Error
+	return favorites, err
 }
 
 func AddFavorite(f models.Favorite) error {
-	_, err := db.DB.Exec("INSERT INTO favorites (name, path, icon) VALUES (?, ?, ?)", f.Name, f.Path, f.Icon)
-	return err
+	return db.DB.Create(&f).Error
 }
 
-func DeleteFavorite(id int64) error {
-	_, err := db.DB.Exec("DELETE FROM favorites WHERE id = ?", id)
-	return err
+func DeleteFavorite(id uint) error {
+	return db.DB.Delete(&models.Favorite{}, id).Error
 }

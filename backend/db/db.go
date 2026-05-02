@@ -1,56 +1,35 @@
 package db
 
 import (
-	"database/sql"
 	"log"
 	"os"
-	"path/filepath"
 
-	_ "modernc.org/sqlite"
+	"github.com/wzos/backend/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var DB *sql.DB
+var DB *gorm.DB
 
 func InitDB() {
-	var err error
 	dbPath := "wzos.db"
-	
-	DB, err = sql.Open("sqlite", dbPath)
+
+	var err error
+	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 
-	if err = DB.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+	if err = DB.AutoMigrate(&models.User{}, &models.SystemConfig{}, &models.Favorite{}); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	createTables()
 	seedData()
 }
 
-func createTables() {
-	query := `
-	CREATE TABLE IF NOT EXISTS favorites (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		path TEXT NOT NULL,
-		icon TEXT NOT NULL
-	);`
-	
-	_, err := DB.Exec(query)
-	if err != nil {
-		log.Fatalf("Failed to create favorites table: %v", err)
-	}
-}
-
 func seedData() {
-	// Check if favorites is empty
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM favorites").Scan(&count)
-	if err != nil {
-		log.Printf("Error checking favorites count: %v", err)
-		return
-	}
+	var count int64
+	DB.Model(&models.Favorite{}).Count(&count)
 
 	if count == 0 {
 		home, _ := os.UserHomeDir()
@@ -58,22 +37,24 @@ func seedData() {
 			home = "/home/user"
 		}
 
-		favorites := []struct {
-			Name string
-			Path string
-			Icon string
-		}{
-			{"桌面", filepath.Join(home, "Desktop"), "desktop"},
-			{"文档", filepath.Join(home, "Documents"), "file-text"},
-			{"下载", filepath.Join(home, "Downloads"), "download"},
-			{"图片", filepath.Join(home, "Pictures"), "picture"},
+		favorites := []models.Favorite{
+			{Name: "桌面", Path: home + "/Desktop", Icon: "desktop"},
+			{Name: "文档", Path: home + "/Documents", Icon: "file-text"},
+			{Name: "下载", Path: home + "/Downloads", Icon: "download"},
+			{Name: "图片", Path: home + "/Pictures", Icon: "picture"},
 		}
 
 		for _, f := range favorites {
-			_, err := DB.Exec("INSERT INTO favorites (name, path, icon) VALUES (?, ?, ?)", f.Name, f.Path, f.Icon)
-			if err != nil {
-				log.Printf("Error seeding favorite %s: %v", f.Name, err)
-			}
+			DB.Create(&f)
 		}
+	}
+
+	var userCount int64
+	DB.Model(&models.User{}).Count(&userCount)
+	if userCount == 0 {
+		DB.Create(&models.User{
+			Username: "admin",
+			Password: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy",
+		})
 	}
 }

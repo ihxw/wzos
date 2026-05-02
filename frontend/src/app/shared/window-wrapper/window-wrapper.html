@@ -1,0 +1,48 @@
+<div
+  class="macos-window"
+  [style.zIndex]="windowState.zIndex"
+  [style.left.px]="windowState.position.x"
+  [style.top.px]="windowState.position.y"
+  [style.width.px]="windowState.isMaximized ? null : windowState.size.width"
+  [style.height.px]="windowState.isMaximized ? null : windowState.size.height"
+  [class.minimized]="windowState.isMinimized"
+  [class.maximized]="windowState.isMaximized"
+  (mousedown)="onFocus()"
+  #windowEl>
+
+  <div class="window-titlebar" (mousedown)="onDragStart($event)">
+    <div class="window-controls">
+      <button class="control-btn close" (click)="onClose()" title="关闭">
+        <svg viewBox="0 0 12 12">
+          <path d="M3.5 3.5l5 5M8.5 3.5l-5 5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+      </button>
+      <button class="control-btn minimize" (click)="onMinimize()" title="最小化">
+        <svg viewBox="0 0 12 12">
+          <line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
+      <button class="control-btn maximize" (click)="onMaximize()" title="全屏">
+        <svg viewBox="0 0 12 12">
+          <path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+      </button>
+    </div>
+    <div class="window-title">{{ windowState.title }}</div>
+    <div class="window-spacer"></div>
+  </div>
+
+  <div class="window-content">
+    <ng-template #contentHost></ng-template>
+  </div>
+
+  <!-- Resize handles -->
+  <div class="resize-handle resize-handle-n"  (mousedown)="onResizeStart($event, 'n')"></div>
+  <div class="resize-handle resize-handle-s"  (mousedown)="onResizeStart($event, 's')"></div>
+  <div class="resize-handle resize-handle-e"  (mousedown)="onResizeStart($event, 'e')"></div>
+  <div class="resize-handle resize-handle-w"  (mousedown)="onResizeStart($event, 'w')"></div>
+  <div class="resize-handle resize-handle-ne" (mousedown)="onResizeStart($event, 'ne')"></div>
+  <div class="resize-handle resize-handle-nw" (mousedown)="onResizeStart($event, 'nw')"></div>
+  <div class="resize-handle resize-handle-se" (mousedown)="onResizeStart($event, 'se')"></div>
+  <div class="resize-handle resize-handle-sw" (mousedown)="onResizeStart($event, 'sw')"></div>
+</div>

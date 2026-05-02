@@ -1,61 +1,120 @@
-# WZOS - Web Linux 管理系统实现方案
+# `plan.md` - WebOS Linux 管理面板开发计划
 
-本项目旨在构建一个具有 macOS 桌面环境体验的 Web 版 Linux 服务器管理系统。用户将能够在一个流畅、美观、多窗口的 Web 桌面界面中，完成对底层 Linux 系统的各项管理工作。
+## 1. 项目概述与架构设计
+**项目目标：** 开发一个基于 Web 的 Linux 系统管理工具，前端提供完全仿制最新 macOS (Sonoma/Sequoia) 的桌面交互体验，后端提供安全稳定的系统级 API 控制。
+**技术栈：**
+* **前端:** Angular (最新版本) + NG-ZORRO (Ant Design of Angular) + TailwindCSS (辅助原子类布局与模糊特效)
+* **后端:** Golang + Gin (Web 框架) + SQLite (本地配置存储)
+* **核心通信:** RESTful API + WebSockets (用于终端实时通信)
 
-## 1. 最佳前后端技术栈与架构选择
-
-### 前端技术栈 (Frontend)
-*   **核心框架:** **Angular + TypeScript**。Angular 提供了强大的工程化能力、依赖注入和完善的 CLI 工具，非常适合构建大型复杂的桌面级 Web 应用。
-*   **UI 组件库:** **NG-ZORRO (Ant Design of Angular)**。结合自定义的 CSS (磨砂玻璃特效、macOS 风格阴影和圆角) 来打造极其专业且极致的视觉体验。
-*   **桌面UI/窗口交互:** 
-    *   **极致的 macOS 体验:** 所有应用以“浮动窗口”形式存在于 Web 桌面上，支持多任务、可拖拽、可缩放、最小化/最大化。
-    *   可以通过集成第三方库（如 `winbox.js` 的 Angular 封装）或者利用 Angular 的 CDK (Component Dev Kit) 的 `DragDrop` 和 `Overlay` 模块来实现强大的自定义窗口管理器。
-*   **终端模拟器:** **Xterm.js** + `xterm-addon-fit` + `xterm-addon-webgl`。这是目前 Web 端最成熟的终端渲染方案，性能极佳。
-
-### 后端技术栈 (Backend)
-*   **核心语言:** **Go (Golang)**。
-    *   *为什么选 Go？* Go 编译后是一个独立的二进制文件，**零依赖**，极其适合作为 Linux 管理 Agent 部署。它拥有极低的内存占用和出色的并发处理能力，能高效处理底层系统调用。
-*   **Web 框架:** **Gin** 或 **Fiber**。高性能且轻量级的 HTTP 路由框架。
-*   **终端/系统交互:** `creack/pty` 库用于在 Go 中创建伪终端 (PTY) 并直接与系统的 `bash` 或 `zsh` 交互。
-
-### 架构与通信方式
-*   **部署架构 (单节点 Agent 模式):** Go 后端作为一个 `systemd` 服务运行在目标 Linux 机器上（需要 root 权限以执行系统管理任务）。Go 程序内部同时负责提供 API 接口并托管编译好的 Angular 前端静态文件。
-*   **通信方式:**
-    *   **RESTful API (HTTP + JSON):** 用于无状态的 CRUD 操作（例如：获取文件列表、修改系统设置、添加防火墙规则等）。
-    *   **WebSocket (WS):** 用于需要实时双向通信的场景。
-        *   **终端 (Terminal):** 将 Xterm.js 的输入通过 WS 发送到后端的 PTY，再将 PTY 的输出实时推送回前端。
-        *   **系统监控:** 实时推送 CPU、内存、网络 IO 等仪表盘数据。
-        *   **文件传输 (可选):** 针对大文件上传/下载进度的高频回调。
+**目录结构约定 (Monorepo 推荐)：**
+```text
+/webos-linux-panel
+├── /backend             # Golang 后端目录
+│   ├── /api             # 控制器 (Gin Handlers)
+│   ├── /core            # 核心业务逻辑 (系统信息, 文件操作, PTY)
+│   ├── /models          # SQLite 数据库模型 (GORM)
+│   ├── /routes          # 路由注册
+│   ├── /ws              # WebSocket 服务
+│   └── main.go          # 入口文件
+└── /frontend            # Angular 前端目录
+    ├── /src
+    │   ├── /app
+    │   │   ├── /core    # 核心服务 (认证, WindowManager, WebSocket)
+    │   │   ├── /shared  # 共享 UI 组件 (Dock, MenuBar, WindowWrapper)
+    │   │   ├── /apps    # 独立的应用模块 (Finder, Terminal, Settings)
+    │   │   └── app.component.ts # 桌面基础布局
+```
 
 ---
 
-## 2. 基础系统配置功能列表 (初始阶段)
+## 2. 阶段一：基础设施与后端核心搭建 (Golang)
+**目标：** 搭建后端基础框架，实现数据库连接，并提供基础的认证和系统信息获取接口。
 
-初期我们将实现以下五大核心模块，以下是每个模块包含的基础系统配置功能：
+* [ ] **任务 1.1: 初始化 Golang 项目**
+    * 执行 `go mod init webos-panel`。
+    * 安装依赖：`github.com/gin-gonic/gin`, `gorm.io/gorm`, `gorm.io/driver/sqlite`, `github.com/golang-jwt/jwt/v5`。
+* [ ] **任务 1.2: 数据库与认证 (Auth)**
+    * 使用 GORM 初始化 SQLite 数据库 `webos.db`。
+    * 创建 `User` 和 `SystemConfig` 表。
+    * 实现基于 JWT 的登录验证，提供 `/api/login` 接口，并编写 Gin Middleware 拦截未授权请求。
+* [ ] **任务 1.3: 系统基础信息采集 (Settings 依赖)**
+    * 引入 `github.com/shirou/gopsutil/v3` 库。
+    * 编写 `/api/sysinfo/overview` 接口，返回 CPU、内存、磁盘使用率、OS 版本（精确识别 Debian/Ubuntu 等发行版）和运行时间。
 
-### 📂 1. 文件管理 (File Manager)
-*   **基础操作:** 类似 macOS Finder，支持列表和网格视图。支持文件/文件夹的创建、删除、重命名、复制、移动。
-*   **权限管理:** 可视化修改文件权限 (chmod) 和所有者 (chown)。
-*   **文件传输:** 支持拖拽上传文件到服务器，以及从服务器下载文件。
-*   **代码/文本编辑:** 内置基于 Monaco Editor (VSCode 内核) 的代码编辑器，直接在 Web 端修改配置文件。
-*   **归档管理:** 支持 `.tar.gz`, `.zip` 等格式的在线压缩与解压。
+---
 
-### 💻 2. 终端管理 (Terminal)
-*   **原生交互:** 打开即用的 Web 终端，直连当前系统的 Shell，无需配置 SSH 密钥（通过本地 PTY 实现）。
-*   **多标签页/多窗口:** 可以在桌面上打开多个独立的终端窗口，互不干扰。
-*   **外观定制:** 支持字体大小、终端主题配色调整。
+## 3. 阶段二：前端 macOS 桌面系统级交互 (Angular)
+**目标：** 构建 macOS 的视觉外壳，最核心的是实现一个全局的**窗口管理系统 (Window Manager)**。
 
-### 📦 3. 应用管理 (App Manager)
-*   **系统服务 (systemd):** 可视化管理系统服务，支持列出所有服务，以及启动、停止、重启、开机自启 (enable/disable) 控制。
-*   **进程管理:** 类似任务管理器，查看当前运行的进程，CPU/内存占用，并支持强制结束 (kill) 进程。
+* [ ] **任务 2.1: 初始化 Angular 项目与 UI 库**
+    * 执行 `ng new frontend --routing --style=scss`。
+    * 安装并配置 NG-ZORRO (`ng add ng-zorro-antd`) 和 TailwindCSS。
+* [ ] **任务 2.2: 全局窗口管理器服务 (`WindowManagerService`)**
+    * **核心难点：** 编写一个 Angular Service 维护当前打开的“应用”列表（如 Finder, Terminal）。
+    * 需包含状态：`appId`, `title`, `zIndex` (层级控制), `isMinimized`, `isMaximized`, `position (x, y)`, `size (width, height)`。
+    * 当点击应用时，将其 `zIndex` 提升至最高。
+* [ ] **任务 2.3: 开发 macOS 布局组件**
+    * **Top Menu Bar:** 顶部状态栏，左侧显示苹果(或自定义)Logo 和当前激活应用的菜单，右侧显示时间、网络、控制中心图标（利用 Tailwind 的 `backdrop-filter: blur` 实现毛玻璃效果）。
+    * **Dock:** 底部应用程序坞，悬浮放大效果（可使用 CSS 配合 Angular 动画实现）。
+    * **Window Wrapper 组件:** 这是一个通用容器组件，用于包裹 Finder/Terminal。必须包含 macOS 经典的红黄绿三大控制按钮（关闭、最小化、全屏），并引入 `@angular/cdk/drag-drop` 实现窗口拖拽和缩放。
 
-### ⚙️ 4. 系统设置 (System Settings)
-*   **主机信息 (Host Info):** 查看系统版本、内核版本、运行时间、硬件架构等概览。
-*   **时间与日期 (Time & Date):** 设置系统时区，配置 NTP 时间同步。
-*   **用户与组 (Users & Groups):** 添加新用户、删除用户、修改用户密码、管理 sudo 权限。
-*   **网络设置 (Network):** 查看当前的网络接口 (Interfaces)、IP 地址、MAC 地址及网关信息。
-*   **系统电源 (Power):** 在 Web 端执行安全重启 (Reboot) 或关机 (Shutdown) 操作。
+---
 
-### 🛡️ 5. 防火墙 (Firewall)
-*   **状态控制:** 可视化开启或关闭系统防火墙 (底层封装 `UFW` 或 `firewalld`)。
-*   **规则管理:** 可视化地添加、删除放行/拒绝规则（例如：放行 80, 443 端口，或者封禁某个恶意 IP）。
+## 4. 阶段三：核心应用 - Web Terminal (终端管理)
+**目标：** 在浏览器中实现流畅的、具有 Linux root/user 权限的真实终端。
+
+* [ ] **任务 3.1: 后端 PTY 与 WebSocket (Golang)**
+    * 引入 `github.com/creack/pty` 创建伪终端。
+    * 引入 `github.com/gorilla/websocket` 实现持久化连接。
+    * 编写 `/ws/terminal` 路由。当连接建立时，启动 `/bin/bash` 或 `/bin/zsh`，将 PTY 的标准输入/输出与 WebSocket 绑定。监听前端传来的窗口 Resize 事件，调整后端 PTY 的 `rows` 和 `cols`。
+* [ ] **任务 3.2: 前端 Xterm.js 接入 (Angular)**
+    * 安装依赖：`xterm`, `xterm-addon-fit`, `xterm-addon-webgl`。
+    * 在前端创建一个 Terminal 组件（受 WindowManager 管理）。
+    * 初始化 Xterm 实例，连接后端的 WebSocket。
+    * 使用 `xterm-addon-fit` 确保终端大小随 Angular 窗口缩放而自适应。配置配色方案以符合 macOS Terminal 默认风格或深色模式。
+
+---
+
+## 5. 阶段四：核心应用 - Finder (文件管理)
+**目标：** 实现类似于 macOS Finder 的文件浏览器，支持对 Linux 文件系统的完整操作。
+
+* [ ] **任务 4.1: 后端文件系统 API (Golang)**
+    * 提供一套 RESTful API：
+        * `GET /api/fs/list?path=/` - 列出目录内容（包含名称、大小、权限、修改时间、类型，过滤掉无权访问的系统核心文件，除非以 root 运行）。
+        * `POST /api/fs/create` - 创建文件/文件夹。
+        * `DELETE /api/fs/delete` - 删除。
+        * `PUT /api/fs/rename` - 重命名。
+        * `POST /api/fs/upload` - 处理文件上传。
+        * `GET /api/fs/download` - 处理文件下载。
+* [ ] **任务 4.2: 前端 Finder 界面实现 (Angular + NG-ZORRO)**
+    * **布局:** 左侧 Sidebar 放置快捷路径 (Home, Root, Downloads)，右侧为内容区。
+    * **视图切换:** 实现“图标视图 (Icon)”和“列表视图 (Table)”两种展示方式（使用 `nz-table`）。
+    * **交互:** 实现双击进入文件夹，顶部面包屑 (Breadcrumb) 导航。
+    * **右键菜单:** 使用 NG-ZORRO 的 `nz-dropdown` 实现自定义的右键菜单（复制、粘贴、删除、新建、权限修改）。
+
+---
+
+## 6. 阶段五：核心应用 - System Settings (系统设置)
+**目标：** 提供对 Linux 服务的可视化配置面板，界面仿照 macOS 的“系统设置”。
+
+* [ ] **任务 6.1: 界面布局设计**
+    * 使用左侧紧凑的 `nz-menu` 作为设置分类（如：网络、安全、服务、关于本机），右侧为具体的表单配置区。
+* [ ] **任务 6.2: 核心功能实现**
+    * **关于本机:** 调用阶段一的 `/api/sysinfo/overview` 接口，仿照 macOS 的“关于本机” UI 展示系统 Logo、CPU、内存等硬件信息。
+    * **系统服务管理 (Systemd):** (进阶功能) 后端通过执行 `systemctl status/start/stop` 命令，前端展示关键服务列表并提供开关控件。
+    * **网络信息:** 展示当前 IP 配置（IPv4/IPv6）和基础路由信息。
+
+---
+
+## 7. 阶段六：打包与部署 (Sysadmin 友好向)
+**目标：** 将前后端打包为一个易于部署的单一二进制文件。
+
+* [ ] **任务 7.1: 前端静态构建**
+    * 配置 Angular 生产环境编译 `ng build --configuration production`。
+* [ ] **任务 7.2: Golang `embed` 静态资源**
+    * 在 Golang 中引入 `embed` 标准库。
+    * 将 Angular 构建出的 `dist` 目录打包进 Go 二进制文件中。
+    * 配置 Gin 路由，处理 SPA (单页应用) 的路由 fallback 问题，确保刷新浏览器不会 404。
+* [ ] **任务 7.3: 交叉编译**
+    * 编写一个 `Makefile` 或 `build.sh`，支持编译出适用于不同架构的执行文件 (例如 `GOOS=linux GOARCH=amd64` 或 `GOOS=linux GOARCH=arm64`)。

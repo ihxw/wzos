@@ -1,0 +1,30 @@
+nohup: 忽略输入
+2026/05/02 11:51:11 Warning: WZOS_JWT_SECRET not set; using default JWT secret
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] POST   /api/login                --> github.com/wzos/backend/api.(*AuthHandler).Login-fm (4 handlers)
+[GIN-debug] GET    /api/sysinfo/overview     --> github.com/wzos/backend/api.(*SystemInfoHandler).GetOverview-fm (5 handlers)
+[GIN-debug] GET    /api/files/list           --> github.com/wzos/backend/handlers.ListFiles (5 handlers)
+[GIN-debug] GET    /api/files/favorites      --> github.com/wzos/backend/handlers.GetFavorites (5 handlers)
+[GIN-debug] GET    /api/files/search         --> github.com/wzos/backend/handlers.SearchFiles (5 handlers)
+[GIN-debug] POST   /api/files/delete         --> github.com/wzos/backend/handlers.DeleteFile (5 handlers)
+[GIN-debug] POST   /api/files/rename         --> github.com/wzos/backend/handlers.RenameFile (5 handlers)
+[GIN-debug] POST   /api/files/create         --> github.com/wzos/backend/handlers.CreateFileOrFolder (5 handlers)
+[GIN-debug] POST   /api/files/copy           --> github.com/wzos/backend/handlers.CopyFileOrDir (5 handlers)
+[GIN-debug] POST   /api/files/upload         --> github.com/wzos/backend/handlers.UploadFile (5 handlers)
+[GIN-debug] GET    /api/files/download       --> github.com/wzos/backend/handlers.DownloadFile (5 handlers)
+[GIN-debug] POST   /api/files/favorites/add  --> github.com/wzos/backend/handlers.AddFavorite (5 handlers)
+[GIN-debug] POST   /api/files/favorites/delete --> github.com/wzos/backend/handlers.DeleteFavorite (5 handlers)
+[GIN-debug] GET    /ws/terminal              --> github.com/wzos/backend/ws.HandleTerminalWebsocket (4 handlers)
+2026/05/02 11:51:11 Backend server starting on :8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+2026/05/02 11:51:12 login failed for user=admin: crypto/bcrypt: hashedPassword is not the hash of the given password
+[GIN] 2026/05/02 - 11:51:12 | 401 |  42.07ms |             ::1 | POST     "/api/login"
+[GIN] 2026/05/02 - 11:51:49 | 200 |  41.64ms |             ::1 | POST     "/api/login"
+signal: terminated
