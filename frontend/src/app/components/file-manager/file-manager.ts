@@ -13,11 +13,14 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { FileService, FileInfo } from '../../core/services/file.service';
+import { MediaViewerComponent, MediaFile } from '../media-viewer/media-viewer';
+import { WindowManagerService } from '../../core/services/window-manager.service';
 import { Subject, debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 
 interface Breadcrumb { name: string; path: string; }
 interface ColumnState { path: string; files: FileInfo[]; selectedPath?: string; }
 interface ClipboardState { files: FileInfo[]; operation: 'copy' | 'cut'; }
+interface TrashItem { name: string; originalPath: string; trashPath: string; isDir: boolean; size: number; deletionDate: string; permissions: string; }
 
 const TAG_COLORS: Record<string, string> = {
   red: '#ff3b30', orange: '#ff9500', yellow: '#ffcc00',
@@ -44,7 +47,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   columns: ColumnState[] = [];
   private columnLoadGeneration = 0;
 
-  viewMode: 'icon' | 'list' | 'column' = 'icon';
+  viewMode: 'icon' | 'list' | 'column' | 'gallery' = 'icon';
   searchQuery = '';
   private searchSubject = new Subject<string>();
   private searchSub: Subscription | null = null;
@@ -57,6 +60,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   showQuickLook = false;
   quickLookFile: FileInfo | null = null;
+
+  showGetInfo = false;
+  getInfoFile: FileInfo | null = null;
 
   sidebarShortcuts: any[] = [];
   locations = [
@@ -71,6 +77,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   tags: Record<string, string[]> = {};
   tagColors = TAG_COLORS;
+  tagNames: Record<string, string> = {};
+  showTagManager = false;
 
   loading = false;
   errorMessage = '';
@@ -78,6 +86,22 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // Upload state
   uploadProgress = 0;
   isUploading = false;
+
+  // Hidden files
+  showHiddenFiles = false;
+
+  // Trash
+  showTrash = false;
+  trashItems: TrashItem[] = [];
+
+  // Group by
+  groupBy: 'none' | 'kind' | 'date' | 'size' = 'none';
+
+  // Gallery
+  galleryFile: FileInfo | null = null;
+
+  // Recent items
+  recentItems: FileInfo[] = [];
 
   // Subscriptions
   private subs: Subscription[] = [];
@@ -88,7 +112,8 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     private fileService: FileService,
     private nzContextMenuService: NzContextMenuService,
     private message: NzMessageService,
-    private http: HttpClient
+    private http: HttpClient,
+    private windowManager: WindowManagerService
   ) {}
 
   ngOnInit(): void {
@@ -98,6 +123,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.navigateTo(defaultPath, true);
     this.loadFavorites();
     this.loadTags();
+    this.loadRecent();
 
     this.searchSub = this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(query => {
       if (query.length > 2) {
@@ -190,11 +216,57 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   open(file: FileInfo | null): void {
     if (!file) return;
+    this.addToRecent(file);
     if (file.isDir) {
       this.navigateTo(file.path);
+    } else if (this.isMediaFile(file)) {
+      this.openMediaViewer(file);
     } else {
       this.downloadFile(file);
     }
+  }
+
+  isMediaFile(file: FileInfo): boolean {
+    return this.getMediaType(file) !== null;
+  }
+
+  getMediaType(file: FileInfo): 'image' | 'audio' | 'video' | null {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff'];
+    const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'wma', 'm4a', 'opus'];
+    const videoExts = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'm4v'];
+    if (imageExts.includes(ext || '')) return 'image';
+    if (audioExts.includes(ext || '')) return 'audio';
+    if (videoExts.includes(ext || '')) return 'video';
+    return null;
+  }
+
+  openMediaViewer(file: FileInfo): void {
+    const type = this.getMediaType(file);
+    if (!type) return;
+
+    // Build list of media files in current directory
+    const mediaFiles: MediaFile[] = this.files
+      .filter(f => !f.isDir && this.isMediaFile(f))
+      .map(f => ({ name: f.name, path: f.path, type: this.getMediaType(f)!, fileType: f.name.split('.').pop() }));
+
+    const idx = mediaFiles.findIndex(f => f.path === file.path);
+
+    // Open as standalone app window
+    this.windowManager.openWindow(
+      'image-viewer',
+      file.name,
+      MediaViewerComponent,
+      {
+        size: { width: 900, height: 640 },
+        position: { x: 120, y: 80 },
+        inputs: {
+          files: mediaFiles,
+          currentIndex: idx >= 0 ? idx : 0,
+          windowTitle: file.name
+        }
+      }
+    );
   }
 
   goUp(): void {
@@ -237,8 +309,16 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // ===== Filtered & Sorted Files =====
   get filteredFiles(): FileInfo[] {
     let result = [...this.files];
+    // Filter hidden files
+    if (!this.showHiddenFiles) {
+      result = result.filter(f => !f.name.startsWith('.'));
+    }
     if (this.searchQuery && this.searchQuery.length <= 2) {
       result = result.filter(f => f.name.toLowerCase().includes(this.searchQuery.toLowerCase()));
+    }
+    // Apply grouping
+    if (this.groupBy !== 'none') {
+      return this.applyGrouping(result);
     }
     return result.sort((a, b) => {
       if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
@@ -254,6 +334,43 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     });
   }
 
+  private applyGrouping(files: FileInfo[]): FileInfo[] {
+    const dirs = files.filter(f => f.isDir);
+    const nondirs = files.filter(f => !f.isDir);
+    const grouped = [...dirs];
+
+    const groups: Map<string, FileInfo[]> = new Map();
+    for (const f of nondirs) {
+      let key = '';
+      switch (this.groupBy) {
+        case 'kind':
+          key = this.getFileType(f);
+          break;
+        case 'date':
+          const d = new Date(f.modTime);
+          key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          break;
+        case 'size':
+          if (f.size < 1024) key = '0-1 KB';
+          else if (f.size < 1024 * 1024) key = '1 KB-1 MB';
+          else if (f.size < 1024 * 1024 * 100) key = '1-100 MB';
+          else key = '>100 MB';
+          break;
+      }
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(f);
+    }
+
+    // Sort groups by key
+    const sortedKeys = Array.from(groups.keys()).sort();
+    for (const key of sortedKeys) {
+      const groupFiles = groups.get(key)!;
+      groupFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+      grouped.push(...groupFiles);
+    }
+    return grouped;
+  }
+
   setSort(key: any): void {
     if (this.sortKey === key) {
       this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
@@ -264,18 +381,35 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Selection =====
+  private lastClickedIndex = -1;
+
   toggleSelection(file: FileInfo, event: MouseEvent): void {
     event.stopPropagation();
     this.renamingPath = null;
-    if (event.ctrlKey || event.metaKey) {
+    if (event.shiftKey && this.lastClickedIndex >= 0) {
+      // Range selection
+      const currentIndex = this.filteredFiles.indexOf(file);
+      if (currentIndex >= 0) {
+        const start = Math.min(this.lastClickedIndex, currentIndex);
+        const end = Math.max(this.lastClickedIndex, currentIndex);
+        if (!(event.ctrlKey || event.metaKey)) {
+          this.selectedFiles.clear();
+        }
+        for (let i = start; i <= end; i++) {
+          this.selectedFiles.add(this.filteredFiles[i].path);
+        }
+      }
+    } else if (event.ctrlKey || event.metaKey) {
       if (this.selectedFiles.has(file.path)) {
         this.selectedFiles.delete(file.path);
       } else {
         this.selectedFiles.add(file.path);
       }
+      this.lastClickedIndex = this.filteredFiles.indexOf(file);
     } else {
       this.selectedFiles.clear();
       this.selectedFiles.add(file.path);
+      this.lastClickedIndex = this.filteredFiles.indexOf(file);
     }
   }
 
@@ -406,18 +540,18 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     const targets = this.selectedFilesList;
     if (targets.length === 0) return;
     const names = targets.length === 1 ? targets[0].name : `${targets.length} 个项目`;
-    if (!confirm(`确定要删除 ${names} 吗? 此操作不可撤销。`)) return;
+    if (!confirm(`确定要将 ${names} 移到废纸篓吗?`)) return;
 
     let completed = 0;
     let hasError = false;
     const total = targets.length;
     targets.forEach(file => {
-      const sub = this.fileService.deleteFile(file.path).subscribe({
+      const sub = this.fileService.trashMove(file.path).subscribe({
         next: () => {
           completed++;
           if (completed === total) {
             this.navigateTo(this.currentPath, false);
-            if (!hasError) this.message.success('已删除');
+            if (!hasError) this.message.success('已移至废纸篓');
           }
         },
         error: (err) => {
@@ -429,6 +563,88 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       });
       this.subs.push(sub);
     });
+  }
+
+  permanentlyDelete(): void {
+    const targets = this.selectedFilesList;
+    if (targets.length === 0) return;
+    const names = targets.length === 1 ? targets[0].name : `${targets.length} 个项目`;
+    if (!confirm(`确定要立即删除 ${names} 吗? 此操作不可撤销。`)) return;
+
+    let completed = 0;
+    let hasError = false;
+    const total = targets.length;
+    targets.forEach(file => {
+      const sub = this.fileService.deleteFile(file.path).subscribe({
+        next: () => {
+          completed++;
+          if (completed === total) {
+            this.navigateTo(this.currentPath, false);
+            if (!hasError) this.message.success('已永久删除');
+          }
+        },
+        error: (err) => {
+          if (!hasError) {
+            hasError = true;
+            this.message.error('删除失败: ' + (err.error?.error || err.message));
+          }
+        }
+      });
+      this.subs.push(sub);
+    });
+  }
+
+  // ===== Trash =====
+  viewTrash(): void {
+    this.showTrash = true;
+    this.loadTrash();
+  }
+
+  exitTrash(): void {
+    this.showTrash = false;
+    this.navigateTo('/', true);
+  }
+
+  loadTrash(): void {
+    this.loading = true;
+    const sub = this.fileService.trashList().subscribe({
+      next: (data) => {
+        this.trashItems = data || [];
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        this.message.error('无法加载废纸篓');
+      }
+    });
+    this.subs.push(sub);
+  }
+
+  restoreFromTrash(item: TrashItem): void {
+    const sub = this.fileService.trashRestore(item.name).subscribe({
+      next: () => {
+        this.loadTrash();
+        this.message.success('已恢复 ' + item.name);
+      },
+      error: (err) => this.message.error('恢复失败: ' + (err.error?.error || err.message))
+    });
+    this.subs.push(sub);
+  }
+
+  emptyTrash(): void {
+    if (this.trashItems.length === 0) {
+      this.message.info('废纸篓已空');
+      return;
+    }
+    if (!confirm(`确定要清空废纸篓吗? 此操作将永久删除 ${this.trashItems.length} 个项目。`)) return;
+    const sub = this.fileService.trashEmpty().subscribe({
+      next: () => {
+        this.trashItems = [];
+        this.message.success('已清空废纸篓');
+      },
+      error: (err) => this.message.error('清空失败: ' + (err.error?.error || err.message))
+    });
+    this.subs.push(sub);
   }
 
   // ===== Clipboard =====
@@ -552,10 +768,22 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       const saved = localStorage.getItem('wzos-tags');
       this.tags = saved ? JSON.parse(saved) : {};
     } catch { this.tags = {}; }
+    try {
+      const savedNames = localStorage.getItem('wzos-tag-names');
+      this.tagNames = savedNames ? JSON.parse(savedNames) : {};
+    } catch { this.tagNames = {}; }
   }
 
   saveTags(): void {
     localStorage.setItem('wzos-tags', JSON.stringify(this.tags));
+  }
+
+  saveTagNames(): void {
+    localStorage.setItem('wzos-tag-names', JSON.stringify(this.tagNames));
+  }
+
+  getTagName(color: string): string {
+    return this.tagNames[color] || color;
   }
 
   toggleTag(filePath: string, color: string): void {
@@ -585,6 +813,42 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     }
     this.searchQuery = '';
     this.files = this.files.filter(f => paths.includes(f.path));
+  }
+
+  renameTag(color: string): void {
+    const newName = prompt(`为标签 "${this.getTagName(color)}" 输入新名称:`, this.getTagName(color));
+    if (newName && newName.trim()) {
+      this.tagNames[color] = newName.trim();
+      this.saveTagNames();
+    }
+  }
+
+  deleteTag(color: string): void {
+    const name = this.getTagName(color);
+    if (!confirm(`确定要删除标签 "${name}" 吗? 所有文件上的该标签都会被移除。`)) return;
+    delete this.tags[color];
+    delete this.tagNames[color];
+    this.saveTags();
+    this.saveTagNames();
+  }
+
+  createTag(): void {
+    // Generate a random color
+    const colors = Object.keys(TAG_COLORS).filter(c => !this.tags[c]);
+    if (colors.length === 0) {
+      this.message.warning('已使用所有标签颜色');
+      return;
+    }
+    const color = colors[0];
+    const name = prompt('请输入新标签名称:', '新标签');
+    if (name && name.trim()) {
+      this.tagNames[color] = name.trim();
+      this.saveTagNames();
+    }
+  }
+
+  toggleTagManager(): void {
+    this.showTagManager = !this.showTagManager;
   }
 
   // ===== Favorites =====
@@ -749,10 +1013,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.subs.push(sub);
   }
 
-  setViewMode(mode: 'icon' | 'list' | 'column'): void {
+  setViewMode(mode: 'icon' | 'list' | 'column' | 'gallery'): void {
     this.viewMode = mode;
     if (mode === 'column') {
       this.rebuildColumns(this.currentPath, this.files);
+    }
+    if (mode === 'gallery') {
+      this.galleryFile = this.selectedFile || this.files[0] || null;
     }
   }
 
@@ -802,10 +1069,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     } else if (mod && event.key === 'v') {
       event.preventDefault();
       this.pasteFiles();
+    } else if (mod && event.key === 'd') {
+      event.preventDefault();
+      this.duplicateFile();
     } else if (event.key === 'Delete' || (mod && event.key === 'Backspace')) {
       if (this.selectedFiles.size > 0) {
         event.preventDefault();
-        this.deleteFile();
+        if (event.altKey) {
+          this.permanentlyDelete();
+        } else {
+          this.deleteFile();
+        }
       }
     } else if (event.key === 'Enter') {
       if (this.selectedFiles.size === 1) {
@@ -826,8 +1100,17 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     } else if (mod && event.shiftKey && event.key === 'N') {
       event.preventDefault();
       this.createNew(true);
+    } else if (mod && event.shiftKey && event.key === '.') {
+      event.preventDefault();
+      this.toggleHiddenFiles();
+    } else if (mod && event.key === 'i') {
+      event.preventDefault();
+      if (this.selectedFile) {
+        this.getInfo();
+      }
     } else if (event.key === 'Escape') {
-      this.closeQuickLook();
+      if (this.showQuickLook) this.closeQuickLook();
+      if (this.showGetInfo) this.closeGetInfo();
     }
   }
 
@@ -835,13 +1118,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   getInfo(): void {
     const file = this.selectedFile;
     if (!file) return;
-    this.toggleQuickLook(file);
+    this.getInfoFile = file;
+    this.showGetInfo = true;
   }
 
   getFolderInfo(): void {
     const crumbs = this.getBreadcrumbs();
     const folderName = crumbs[crumbs.length - 1]?.name || '/';
-    // Use a file-like structure for Quick Look
     const info: FileInfo = {
       name: folderName,
       path: this.currentPath,
@@ -850,8 +1133,154 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       modTime: new Date().toISOString(),
       permissions: ''
     };
-    this.quickLookFile = info;
-    this.showQuickLook = true;
+    this.getInfoFile = info;
+    this.showGetInfo = true;
+  }
+
+  closeGetInfo(): void {
+    this.showGetInfo = false;
+    this.getInfoFile = null;
+  }
+
+  // ===== Duplicate =====
+  duplicateFile(): void {
+    const targets = this.selectedFilesList;
+    if (targets.length === 0) return;
+    let completed = 0;
+    const total = targets.length;
+    let hasError = false;
+    targets.forEach(file => {
+      const sub = this.fileService.duplicateFile(file.path).subscribe({
+        next: () => {
+          completed++;
+          if (completed === total) {
+            this.navigateTo(this.currentPath, false);
+            if (!hasError) this.message.success('已复制');
+          }
+        },
+        error: (err) => {
+          if (!hasError) {
+            hasError = true;
+            this.message.error('复制失败: ' + (err.error?.error || err.message));
+          }
+        }
+      });
+      this.subs.push(sub);
+    });
+  }
+
+  // ===== Compress / Extract =====
+  compressFile(): void {
+    const targets = this.selectedFilesList;
+    if (targets.length === 0) return;
+    let completed = 0;
+    const total = targets.length;
+    targets.forEach(file => {
+      const sub = this.fileService.compressFile(file.path).subscribe({
+        next: (res: any) => {
+          completed++;
+          if (completed === total) {
+            this.navigateTo(this.currentPath, false);
+            this.message.success('压缩完成');
+          }
+        },
+        error: (err) => this.message.error('压缩失败: ' + (err.error?.error || err.message))
+      });
+      this.subs.push(sub);
+    });
+  }
+
+  extractFile(file: FileInfo): void {
+    const sub = this.fileService.extractFile(file.path).subscribe({
+      next: () => {
+        this.navigateTo(this.currentPath, false);
+        this.message.success('解压完成');
+      },
+      error: (err) => this.message.error('解压失败: ' + (err.error?.error || err.message))
+    });
+    this.subs.push(sub);
+  }
+
+  isCompressedFile(file: FileInfo): boolean {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    return ['zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar'].includes(ext || '');
+  }
+
+  // ===== Copy Path =====
+  copyPath(): void {
+    const file = this.selectedFile;
+    if (!file) return;
+    navigator.clipboard.writeText(file.path).then(() => {
+      this.message.success('已拷贝路径');
+    }).catch(() => {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = file.path;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.message.success('已拷贝路径');
+    });
+  }
+
+  copyCurrentFolderPath(): void {
+    navigator.clipboard.writeText(this.currentPath).then(() => {
+      this.message.success('已拷贝路径');
+    }).catch(() => {
+      const textarea = document.createElement('textarea');
+      textarea.value = this.currentPath;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      this.message.success('已拷贝路径');
+    });
+  }
+
+  // ===== Open in Terminal =====
+  openInTerminal(): void {
+    // Dispatch a custom event that the terminal can listen to
+    const targetPath = this.selectedFile?.isDir ? this.selectedFile.path : this.currentPath;
+    window.dispatchEvent(new CustomEvent('wzos-open-terminal', { detail: { path: targetPath } }));
+    this.message.info('已在终端中打开: ' + targetPath);
+  }
+
+  // ===== Hidden Files =====
+  toggleHiddenFiles(): void {
+    this.showHiddenFiles = !this.showHiddenFiles;
+  }
+
+  // ===== Group By =====
+  setGroupBy(mode: 'none' | 'kind' | 'date' | 'size'): void {
+    this.groupBy = mode;
+  }
+
+  // ===== Recent =====
+  loadRecent(): void {
+    const sub = this.fileService.getRecent().subscribe({
+      next: (data) => {
+        this.recentItems = (data || []).filter(item => item != null);
+      },
+      error: () => {
+        this.recentItems = [];
+      }
+    });
+    this.subs.push(sub);
+  }
+
+  addToRecent(file: FileInfo): void {
+    const sub = this.fileService.addRecent(file).subscribe({
+      next: () => {
+        this.loadRecent();
+      },
+      error: () => {}
+    });
+    this.subs.push(sub);
   }
 
   // ===== Icon & Type Helpers =====

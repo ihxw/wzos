@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wzos/backend/models"
@@ -21,11 +22,24 @@ func RegisterFileRoutes(r gin.IRouter) {
 		files.POST("/rename", RenameFile)
 		files.POST("/create", CreateFileOrFolder)
 		files.POST("/copy", CopyFileOrDir)
+		files.POST("/duplicate", DuplicateFile)
 		files.POST("/upload", UploadFile)
 		files.GET("/download", DownloadFile)
+		files.GET("/view", ViewFile)
 		files.GET("/diskusage", DiskUsage)
 		files.POST("/favorites/add", AddFavorite)
 		files.POST("/favorites/delete", DeleteFavorite)
+		// Trash
+		files.POST("/trash/move", MoveToTrash)
+		files.GET("/trash/list", ListTrash)
+		files.POST("/trash/restore", RestoreFromTrash)
+		files.POST("/trash/empty", EmptyTrash)
+		// Compress / Extract
+		files.POST("/compress", CompressFile)
+		files.POST("/extract", ExtractFile)
+		// Recent
+		files.GET("/recent", GetRecentItems)
+		files.POST("/recent/add", AddRecentItem)
 	}
 }
 
@@ -263,4 +277,155 @@ func DownloadFile(c *gin.Context) {
 	}
 
 	c.FileAttachment(filePath, filepath.Base(filePath))
+}
+
+// ViewFile serves a file for inline viewing (no Content-Disposition: attachment).
+// Used for displaying images, audio, video in the browser.
+func ViewFile(c *gin.Context) {
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Path required"})
+		return
+	}
+
+	filePath = filepath.Clean(filePath)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+
+	c.File(filePath)
+}
+
+// ===== Trash Handlers =====
+
+func MoveToTrash(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if err := services.MoveToTrash(req.Path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func ListTrash(c *gin.Context) {
+	items, err := services.ListTrash()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
+
+func RestoreFromTrash(c *gin.Context) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if err := services.RestoreFromTrash(req.Name); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func EmptyTrash(c *gin.Context) {
+	if err := services.EmptyTrash(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ===== Duplicate Handler =====
+
+func DuplicateFile(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if err := services.DuplicateFile(req.Path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ===== Compress / Extract Handlers =====
+
+func CompressFile(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	zipPath, err := services.CompressToZip(req.Path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"zipPath": zipPath, "success": true})
+}
+
+func ExtractFile(c *gin.Context) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	extractPath, err := services.ExtractZip(req.Path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"extractPath": extractPath, "success": true})
+}
+
+// ===== Recent Items Handlers =====
+
+func GetRecentItems(c *gin.Context) {
+	items := services.GetRecent()
+	c.JSON(http.StatusOK, items)
+}
+
+func AddRecentItem(c *gin.Context) {
+	var req struct {
+		Name        string `json:"name"`
+		Path        string `json:"path"`
+		IsDir       bool   `json:"isDir"`
+		Size        int64  `json:"size"`
+		ModTime     string `json:"modTime"`
+		Permissions string `json:"permissions"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	// Parse time string to time.Time for internal use
+	modTime, _ := time.Parse(time.RFC3339, req.ModTime)
+	services.AddRecent(models.FileInfo{
+		Name:        req.Name,
+		Path:        req.Path,
+		IsDir:       req.IsDir,
+		Size:        req.Size,
+		ModTime:     modTime,
+		Permissions: req.Permissions,
+	})
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }

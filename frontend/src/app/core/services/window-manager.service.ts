@@ -1,5 +1,5 @@
 import { Injectable, ComponentRef, ViewContainerRef, Type } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 
 export interface WindowState {
   id: string;
@@ -12,6 +12,7 @@ export interface WindowState {
   size: { width: number; height: number };
   componentRef?: ComponentRef<any>;
   componentType?: Type<any>;
+  inputs?: Record<string, any>;
 }
 
 @Injectable({
@@ -21,16 +22,22 @@ export class WindowManagerService {
   private windows: WindowState[] = [];
   private highestZIndex = 100;
   private windowsSubject = new BehaviorSubject<WindowState[]>([]);
+  private menuActionSubject = new Subject<{ action: string; windowId: string }>();
 
   windows$ = this.windowsSubject.asObservable();
+  menuAction$ = this.menuActionSubject.asObservable();
 
   constructor() {}
 
   openWindow(appId: string, title: string, componentType: Type<any>, options?: Partial<WindowState>): string {
-    const existingWindow = this.windows.find(w => w.appId === appId && !w.isMinimized);
-    if (existingWindow) {
-      this.focusWindow(existingWindow.id);
-      return existingWindow.id;
+    // For image-viewer, always open a new window
+    const reuseWindow = appId !== 'image-viewer';
+    if (reuseWindow) {
+      const existingWindow = this.windows.find(w => w.appId === appId && !w.isMinimized);
+      if (existingWindow) {
+        this.focusWindow(existingWindow.id);
+        return existingWindow.id;
+      }
     }
 
     const windowId = `${appId}-${Date.now()}`;
@@ -43,7 +50,8 @@ export class WindowManagerService {
       isMaximized: false,
       position: { x: options?.position?.x ?? 100, y: options?.position?.y ?? 100 },
       size: { width: options?.size?.width ?? 800, height: options?.size?.height ?? 600 },
-      componentType
+      componentType,
+      inputs: options?.inputs,
     };
 
     this.windows.push(newWindow);
@@ -93,6 +101,18 @@ export class WindowManagerService {
       window.zIndex = ++this.highestZIndex;
       this.notifyWindowsChanged();
     }
+  }
+
+  dispatchMenuAction(action: string): void {
+    const focused = this.getFocusedWindow();
+    if (focused) {
+      this.menuActionSubject.next({ action, windowId: focused.id });
+    }
+  }
+
+  getFocusedWindow(): WindowState | null {
+    return this.windows.reduce((prev, curr) =>
+      curr.zIndex > (prev?.zIndex ?? 0) ? curr : prev, null as WindowState | null);
   }
 
   setComponentRef(windowId: string, componentRef: ComponentRef<any>): void {

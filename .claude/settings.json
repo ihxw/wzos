@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm uninstall *)",
+      "Read(//home/yu/**)",
+      "Bash(xxd /home/yu/code/github/wzos/frontend/src/app/app.html)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

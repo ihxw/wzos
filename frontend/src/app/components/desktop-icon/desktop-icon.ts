@@ -13,8 +13,15 @@ import { DesktopApp } from '../../core/models/app.model';
 export class DesktopIcon {
   @Input() app!: DesktopApp;
   @Output() onOpen = new EventEmitter<DesktopApp>();
+  @Output() onContextMenu = new EventEmitter<{ app: DesktopApp; event: MouseEvent }>();
 
   open() {
     this.onOpen.emit(this.app);
+  }
+
+  contextMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.onContextMenu.emit({ app: this.app, event });
   }
 }

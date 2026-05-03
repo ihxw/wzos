@@ -6,8 +6,9 @@
       </svg>
     </div>
     <div class="menu-item app-name">{{ activeAppName }}</div>
-    <div class="menu-item">File</div>
-    <div class="menu-item">Edit</div>
+    <div class="menu-item" nz-dropdown [nzDropdownMenu]="fileMenu" nzPlacement="bottomLeft"
+         *ngIf="focusedAppId">File</div>
+    <div class="menu-item" *ngIf="!focusedAppId || focusedAppId === ''">Edit</div>
     <div class="menu-item">View</div>
     <div class="menu-item">Go</div>
     <div class="menu-item">Window</div>
@@ -37,5 +38,31 @@
       </svg>
       退出登录
     </li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-dropdown-menu #fileMenu="nzDropdownMenu">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; min-width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+    <ng-container [ngSwitch]="focusedAppId">
+      <!-- Image Viewer -->
+      <ng-container *ngSwitchCase="'image-viewer'">
+        <li nz-menu-item (click)="onFileMenuClick('file-open')">打开...</li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item (click)="onFileMenuClick('file-close')">关闭</li>
+      </ng-container>
+      <!-- File Manager -->
+      <ng-container *ngSwitchCase="'file-manager'">
+        <li nz-menu-item (click)="onFileMenuClick('file-new-folder')">新建文件夹</li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item (click)="onFileMenuClick('file-open')">打开</li>
+        <li nz-menu-item (click)="onFileMenuClick('file-get-info')">显示简介</li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item (click)="onFileMenuClick('file-close')">关闭</li>
+      </ng-container>
+      <!-- Terminal -->
+      <ng-container *ngSwitchCase="'terminal'">
+        <li nz-menu-item (click)="onFileMenuClick('file-close')">关闭</li>
+      </ng-container>
+    </ng-container>
   </ul>
 </nz-dropdown-menu>

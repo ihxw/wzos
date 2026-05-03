@@ -1,1 +1,48 @@
-<div class="terminal-container" #terminalContainer></div>
+<div class="terminal-wrapper" (contextmenu)="openContextMenu($event, termMenu)">
+  <div class="terminal-container" #terminalContainer></div>
+
+  <div class="terminal-status" (click)="toggleFontPanel()">
+    <div class="status-left">
+      <span class="status-indicator" [class]="statusClass"></span>
+      <span class="status-text">{{ statusText }}</span>
+      <span class="status-size">{{ termSize }}</span>
+    </div>
+    <div class="status-right">
+      <select class="theme-select" [value]="currentThemeKey" (change)="setTheme($any($event.target).value)" (click)="$event.stopPropagation()">
+        <option *ngFor="let key of themeKeys" [value]="key">{{ themes[key].name }}</option>
+      </select>
+      <span class="font-label">{{ fontSize }}px</span>
+    </div>
+  </div>
+
+  <!-- Font settings panel -->
+  <div class="font-panel" *ngIf="showFontPanel" (click)="$event.stopPropagation()">
+    <div class="font-row">
+      <span>Font Size</span>
+      <input type="range" min="10" max="32" [value]="fontSize" (input)="setFontSize($any($event.target).value)">
+      <span>{{ fontSize }}px</span>
+    </div>
+    <div class="font-row">
+      <span>Font Family</span>
+      <select [value]="fontFamily" (change)="setFontFamily($any($event.target).value)">
+        <option value="'Menlo', 'Monaco', monospace">Menlo / Monaco</option>
+        <option value="'Consolas', monospace">Consolas</option>
+        <option value="'Fira Code', monospace">Fira Code</option>
+        <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+        <option value="'Courier New', monospace">Courier New</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<nz-dropdown-menu #termMenu="nzDropdownMenu">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); min-width: 180px;">
+    <li nz-menu-item (click)="copyText()" [nzDisabled]="!hasSelection">复制</li>
+    <li nz-menu-item (click)="pasteText()">粘贴</li>
+    <li nz-menu-divider></li>
+    <li nz-menu-item (click)="clearTerminal()">清除</li>
+    <li nz-menu-item (click)="resetTerminal()">重置</li>
+    <li nz-menu-divider></li>
+    <li nz-menu-item (click)="selectAll()">全选</li>
+  </ul>
+</nz-dropdown-menu>

@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ViewContainerRef, OnInit, OnDestroy, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { WindowState, WindowManagerService } from '../../core/services/window-manager.service';
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -36,6 +37,7 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
 
   private readonly MIN_W = 320;
   private readonly MIN_H = 240;
+  private menuSub: Subscription | null = null;
 
   constructor(
     private windowManager: WindowManagerService,
@@ -43,13 +45,28 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.menuSub = this.windowManager.menuAction$.subscribe(({ action, windowId }) => {
+      if (windowId !== this.windowState?.id) return;
+      if (action === 'file-close') {
+        this.close.emit(this.windowState.id);
+      }
+    });
     if (this.windowState.componentType && this.contentHost) {
       const componentRef = this.contentHost.createComponent(this.windowState.componentType);
+      // Always pass the window ID to the child component
+      componentRef.setInput('windowId', this.windowState.id);
+      // Set additional inputs if provided
+      if (this.windowState.inputs) {
+        for (const [key, value] of Object.entries(this.windowState.inputs)) {
+          componentRef.setInput(key, value);
+        }
+      }
       this.windowManager.setComponentRef(this.windowState.id, componentRef);
     }
   }
 
   ngOnDestroy(): void {
+    this.menuSub?.unsubscribe();
     if (this.windowState.componentRef) {
       this.windowState.componentRef.destroy();
     }

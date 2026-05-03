@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -20,11 +21,22 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type resizePayload struct {
+	Cols uint16 `json:"cols"`
+	Rows uint16 `json:"rows"`
+}
+
+type clientMessage struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
 func RegisterTerminalRoute(r *gin.Engine) {
 	r.GET("/ws/terminal", HandleTerminalWebsocket)
 }
 
 func HandleTerminalWebsocket(c *gin.Context) {
+	log.Println("[TERM] New WebSocket connection (JSON protocol v2)")
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade to websocket: %v", err)
@@ -42,7 +54,9 @@ func HandleTerminalWebsocket(c *gin.Context) {
 	}
 
 	cmd := exec.Command(shell)
-
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		cmd.Dir = homeDir
+	}
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		log.Printf("Failed to start pty: %v", err)
@@ -55,27 +69,39 @@ func HandleTerminalWebsocket(c *gin.Context) {
 		for {
 			n, err := ptmx.Read(buf)
 			if err != nil {
-				log.Printf("Error reading from pty: %v", err)
 				return
 			}
-			err = ws.WriteMessage(websocket.TextMessage, buf[:n])
-			if err != nil {
-				log.Printf("Error writing to websocket: %v", err)
-				return
-			}
+			ws.WriteMessage(websocket.TextMessage, buf[:n])
 		}
 	}()
 
 	for {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
-			log.Printf("Error reading from websocket: %v", err)
 			break
 		}
-		_, err = ptmx.Write(msg)
-		if err != nil {
-			log.Printf("Error writing to pty: %v", err)
-			break
+
+		var clientMsg clientMessage
+		if json.Unmarshal(msg, &clientMsg) != nil || clientMsg.Type == "" {
+			log.Printf("[TERM] RAW: %q", string(msg))
+			ptmx.Write(msg)
+			continue
+		}
+
+		switch clientMsg.Type {
+		case "input":
+			var input string
+			if json.Unmarshal(clientMsg.Data, &input) == nil {
+				ptmx.Write([]byte(input))
+			}
+		case "resize":
+			var size resizePayload
+			if json.Unmarshal(clientMsg.Data, &size) == nil {
+				log.Printf("[TERM] RESIZE %dx%d", size.Cols, size.Rows)
+				pty.Setsize(ptmx, &pty.Winsize{Rows: size.Rows, Cols: size.Cols})
+			}
+		default:
+			log.Printf("[TERM] UNKNOWN type=%s data=%s", clientMsg.Type, string(clientMsg.Data))
 		}
 	}
 }

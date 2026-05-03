@@ -1,0 +1,280 @@
+<div class="mv-app">
+  <!-- ===== Toolbar ===== -->
+  <div class="mv-toolbar" *ngIf="isImage">
+    <div class="mv-toolbar-group" *ngIf="files.length > 1">
+      <button nz-button nzType="text" nzSize="small" (click)="prev()" [disabled]="!canGoPrev" nzTooltipTitle="上一张 (←)">
+        <i nz-icon nzType="left"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="next()" [disabled]="!canGoNext" nzTooltipTitle="下一张 (→)">
+        <i nz-icon nzType="right"></i>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider" *ngIf="files.length > 1"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" (click)="zoomOut()" nzTooltipTitle="缩小 (⌘−)">
+        <i nz-icon nzType="zoom-out"></i>
+      </button>
+      <nz-slider class="mv-zoom-slider" [nzMin]="5" [nzMax]="500" [nzStep]="5" [ngModel]="zoomPercent"
+                 (ngModelChange)="onZoomSliderChange($event)" nzTooltipTitle="缩放"></nz-slider>
+      <button nz-button nzType="text" nzSize="small" (click)="zoomIn()" nzTooltipTitle="放大 (⌘+)">
+        <i nz-icon nzType="zoom-in"></i>
+      </button>
+      <span class="mv-zoom-label" (click)="zoomActual()" nzTooltipTitle="实际大小 (⌘0)">{{ zoomPercent }}%</span>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small"
+              [class.mv-active]="fitToScreen"
+              (click)="toggleZoomFit()" nzTooltipTitle="适配屏幕">
+        <i nz-icon nzType="fullscreen"></i>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" (click)="rotateLeft()" nzTooltipTitle="向左旋转 (⌘L)">
+        <i nz-icon nzType="rotate-left"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="rotateRight()" nzTooltipTitle="向右旋转 (⌘R)">
+        <i nz-icon nzType="rotate-right"></i>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small"
+              [class.mv-active]="showMarkupToolbar"
+              (click)="toggleMarkupToolbar()" nzTooltipTitle="显示标记工具栏">
+        <i nz-icon nzType="highlight"></i>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small"
+              [class.mv-active]="showSidebar"
+              (click)="showSidebar = !showSidebar" nzTooltipTitle="显示缩略图">
+        <i nz-icon nzType="appstore"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small"
+              [class.mv-active]="slideshowActive"
+              (click)="toggleSlideshow()" nzTooltipTitle="幻灯片播放 (Space)">
+        <i nz-icon [nzType]="slideshowActive ? 'pause' : 'play-circle'"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="copyImage()" nzTooltipTitle="拷贝 (⌘C)">
+        <i nz-icon nzType="copy"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="openFile()" nzTooltipTitle="打开文件">
+        <i nz-icon nzType="folder-open"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="downloadFile()" nzTooltipTitle="下载">
+        <i nz-icon nzType="download"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Audio/Video toolbar -->
+  <div class="mv-toolbar" *ngIf="isAudio || isVideo">
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" (click)="closeWindow()">
+        <i nz-icon nzType="close"></i> 关闭
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Markup Toolbar ===== -->
+  <div class="mv-markup-toolbar" *ngIf="showMarkupToolbar && isImage">
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'pointer'" (click)="selectMarkupTool('pointer')" nzTooltipTitle="选择">
+        <i nz-icon nzType="drag"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'pen'" (click)="selectMarkupTool('pen')" nzTooltipTitle="画笔">
+        <i nz-icon nzType="edit"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'rect'" (click)="selectMarkupTool('rect')" nzTooltipTitle="矩形">
+        <i nz-icon nzType="border"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'ellipse'" (click)="selectMarkupTool('ellipse')" nzTooltipTitle="椭圆">
+        <i nz-icon nzType="borderless-table"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'line'" (click)="selectMarkupTool('line')" nzTooltipTitle="线条">
+        <i nz-icon nzType="line"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'text'" (click)="selectMarkupTool('text')" nzTooltipTitle="文字">
+        <i nz-icon nzType="font-size"></i>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <div class="mv-color-palette">
+        <span *ngFor="let c of markupColors" class="mv-color-chip" [style.background]="c"
+              [class.active]="markupColor === c" (click)="markupColor = c"></span>
+      </div>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <nz-slider class="mv-line-slider" [nzMin]="1" [nzMax]="20" [nzStep]="1"
+                 [(ngModel)]="markupLineWidth" nzTooltipTitle="线宽"></nz-slider>
+      <span class="mv-line-label">{{ markupLineWidth }}px</span>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" (click)="undoMarkup()" nzTooltipTitle="撤销 (⌘Z)">
+        <i nz-icon nzType="undo"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="clearMarkup()" nzTooltipTitle="清除标记">
+        <i nz-icon nzType="delete"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Body: Sidebar + Content ===== -->
+  <div class="mv-body" [class.mv-with-sidebar]="showSidebar">
+    <!-- Sidebar -->
+    <aside class="mv-sidebar" *ngIf="showSidebar && files.length > 1">
+      <div class="mv-sidebar-header">
+        <span>缩略图</span>
+        <button nz-button nzType="text" nzSize="small" (click)="showSidebar = false"><i nz-icon nzType="close"></i></button>
+      </div>
+      <div class="mv-sidebar-list">
+        <div *ngFor="let file of files; let i = index"
+             class="mv-sidebar-thumb"
+             [class.active]="i === currentIndex"
+             (click)="currentIndex = i; resetView()">
+          <img *ngIf="file.type === 'image'" [src]="getFileUrl(file)" loading="lazy" />
+          <i *ngIf="file.type === 'video'" nz-icon nzType="video-camera"></i>
+          <i *ngIf="file.type === 'audio'" nz-icon nzType="audio"></i>
+          <span class="mv-sidebar-name">{{ file.name.length > 25 ? file.name.substring(0, 25)+'…' : file.name }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="mv-content"
+         (wheel)="onWheel($event)"
+         (mousedown)="onMouseDown($event)"
+         (mousemove)="onMouseMove($event)"
+         (mouseup)="onMouseUp()"
+         (mouseleave)="onMouseUp()">
+
+      <div class="mv-image-container" #imageContainer
+           *ngIf="isImage && currentFile"
+           [style.cursor]="imageCursor"
+           (click)="onImageClick()">
+        <img #mainImage
+             [src]="getFileUrl(currentFile)"
+             [alt]="currentFile.name"
+             [class.fit-to-screen]="fitToScreen"
+             [style.transform]="imageTransform"
+             (load)="onImageLoad($event); syncCanvasSize()"
+             draggable="false" />
+        <canvas #markupCanvas class="mv-markup-canvas"
+                [style.pointer-events]="showMarkupToolbar ? 'auto' : 'none'"
+                (mousedown)="onMarkupMouseDown($event)"
+                (mousemove)="onMarkupMouseMove($event)"
+                (mouseup)="onMarkupMouseUp()"
+                (mouseleave)="onMarkupMouseUp()">
+        </canvas>
+      </div>
+
+      <div class="mv-audio-container" *ngIf="isAudio && currentFile">
+        <div class="mv-audio-art">
+          <i nz-icon nzType="audio" nzTheme="twotone" nzTwotoneColor="#007aff"></i>
+        </div>
+        <h3>{{ currentFile.name }}</h3>
+        <audio class="media-audio" controls autoplay [src]="getFileUrl(currentFile)">
+          您的浏览器不支持音频播放
+        </audio>
+      </div>
+
+      <div class="mv-video-container" *ngIf="isVideo && currentFile">
+        <video class="media-video" controls autoplay [src]="getFileUrl(currentFile)">
+          您的浏览器不支持视频播放
+        </video>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Status Bar ===== -->
+  <div class="mv-statusbar" *ngIf="isImage && !slideshowActive">
+    <div class="mv-status-left">
+      <span *ngIf="currentFile">{{ currentFile.name }}</span>
+      <span class="mv-status-sep" *ngIf="imageLoaded">—</span>
+      <span *ngIf="imageLoaded">{{ imageNaturalWidth }}×{{ imageNaturalHeight }}</span>
+      <span class="mv-status-sep" *ngIf="currentFile?.fileType">—</span>
+      <span *ngIf="currentFile?.fileType">{{ currentFile!.fileType!.toUpperCase() }}</span>
+      <span class="mv-status-sep" *ngIf="!fitToScreen">—</span>
+      <span *ngIf="!fitToScreen">{{ zoomPercent }}%</span>
+    </div>
+    <div class="mv-status-right" *ngIf="files.length > 1">
+      {{ currentIndex + 1 }} / {{ files.length }}
+    </div>
+  </div>
+
+  <!-- ===== Slideshow Indicator ===== -->
+  <div class="mv-slideshow-indicator" *ngIf="slideshowActive">
+    <i nz-icon nzType="play-circle"></i>
+    <span>幻灯片 — {{ slideshowInterval }}s</span>
+    <button nz-button nzType="text" nzSize="small" (click)="stopSlideshow()">停止</button>
+  </div>
+
+  <!-- ===== Prev/Next Navigation ===== -->
+  <div class="mv-nav-arrows" *ngIf="files.length > 1 && !slideshowActive">
+    <button class="mv-nav-btn mv-prev" (click)="prev()" [disabled]="!canGoPrev">
+      <i nz-icon nzType="left"></i>
+    </button>
+    <button class="mv-nav-btn mv-next" (click)="next()" [disabled]="!canGoNext">
+      <i nz-icon nzType="right"></i>
+    </button>
+  </div>
+
+  <!-- ===== Open File Dialog ===== -->
+  <div class="mv-open-overlay" *ngIf="showOpenDialog" (click)="closeOpenDialog()">
+    <div class="mv-open-dialog" (click)="$event.stopPropagation()">
+      <div class="mv-open-header">
+        <span>打开文件</span>
+        <button class="mv-open-close" (click)="closeOpenDialog()">&times;</button>
+      </div>
+      <div class="mv-open-nav">
+        <button (click)="openDirUp()" title="上层文件夹"><i nz-icon nzType="arrow-up"></i></button>
+        <span class="mv-open-path">{{ openPath }}</span>
+      </div>
+      <div class="mv-open-body">
+        <div class="mv-open-loading" *ngIf="openLoading">
+          <i nz-icon nzType="loading" nzSpin></i> 加载中...
+        </div>
+        <div class="mv-open-list" *ngIf="!openLoading">
+          <div *ngFor="let f of openFiles"
+               class="mv-open-item"
+               (dblclick)="selectOpenFile(f)">
+            <i nz-icon [nzType]="f.isDir ? 'folder' : 'file'" nzTheme="outline"
+               [style.color]="f.isDir ? '#007aff' : '#8e8e93'"></i>
+            <span class="mv-open-name">{{ f.name }}</span>
+            <span class="mv-open-hint" *ngIf="f.isDir">↳</span>
+            <span class="mv-open-type" *ngIf="!f.isDir">{{ f.name.split('.').pop()?.toUpperCase() }}</span>
+          </div>
+          <div *ngIf="openFiles.length === 0" class="mv-open-empty">
+            此文件夹中没有媒体文件
+          </div>
+        </div>
+      </div>
+      <div class="mv-open-footer">
+        <button class="mv-open-btn" (click)="openAllMedia()">打开全部</button>
+        <button class="mv-open-btn mv-open-btn-primary" (click)="closeOpenDialog()">取消</button>
+      </div>
+    </div>
+  </div>
+</div>

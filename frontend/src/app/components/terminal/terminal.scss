@@ -1,7 +1,125 @@
-.terminal-container {
-  width: 100%;
+.terminal-wrapper {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  padding: 10px;
-  background-color: #1e1e1e;
   overflow: hidden;
+}
+
+.terminal-container {
+  flex: 1;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+.terminal-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  background: #1e1e1e;
+  border-top: 1px solid #333;
+  font-size: 11px;
+  color: #888;
+  cursor: default;
+  flex-shrink: 0;
+  user-select: none;
+
+  .status-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-indicator {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+
+    &.connected { background: #4caf50; }
+    &.connecting { background: #ff9800; }
+    &.disconnected { background: #666; }
+    &.error { background: #f44336; }
+  }
+
+  .status-text {
+    color: #aaa;
+  }
+
+  .status-size {
+    color: #666;
+  }
+
+  .theme-select {
+    background: #2a2a2a;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 1px 4px;
+    outline: none;
+    cursor: pointer;
+
+    &:focus {
+      border-color: #666;
+    }
+  }
+
+  .font-label {
+    color: #666;
+    cursor: pointer;
+
+    &:hover {
+      color: #aaa;
+    }
+  }
+}
+
+.font-panel {
+  position: absolute;
+  bottom: 28px;
+  right: 8px;
+  background: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 10px 14px;
+  z-index: 100;
+  min-width: 240px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  .font-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #ccc;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: #007acc;
+    }
+
+    select {
+      flex: 1;
+      background: #1e1e1e;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 3px;
+      font-size: 11px;
+      padding: 2px 4px;
+      outline: none;
+    }
+  }
 }

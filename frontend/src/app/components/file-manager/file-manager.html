@@ -28,15 +28,46 @@
           <i nz-icon [nzType]="item.icon"></i>
           <span>{{ item.name }}</span>
         </li>
+        <li (click)="viewTrash()" [class.active]="showTrash">
+          <i nz-icon nzType="delete"></i>
+          <span>废纸篓</span>
+        </li>
       </ul>
     </div>
     <div class="sidebar-section">
-      <h3>标签</h3>
+      <h3>最近使用</h3>
       <ul>
-        <li *ngFor="let color of objectKeys(tagColors)" (click)="filterByTag(color)">
+        <li *ngFor="let item of recentItems"
+            (click)="navigateTo(item.path)"
+            [class.active]="currentPath === item.path"
+            (contextmenu)="$event.preventDefault()">
+          <i nz-icon [nzType]="item.isDir ? 'folder' : 'file'"></i>
+          <span>{{ item.name }}</span>
+        </li>
+        <li *ngIf="recentItems.length === 0" class="empty-hint">
+          暂无最近项目
+        </li>
+      </ul>
+    </div>
+    <div class="sidebar-section">
+      <h3>
+        标签
+        <button class="tag-add-btn" (click)="createTag()" title="新建标签">+</button>
+      </h3>
+      <ul>
+        <li *ngFor="let color of objectKeys(tags)" (click)="filterByTag(color)" (contextmenu)="$event.preventDefault()">
           <span class="tag-dot" [style.background]="tagColors[color]"></span>
-          <span>{{ color }}</span>
+          <span>{{ getTagName(color) }}</span>
           <span class="tag-count" *ngIf="tags[color]?.length">{{ tags[color].length }}</span>
+          <button class="fav-remove-btn" (click)="renameTag(color); $event.stopPropagation()" title="重命名标签">
+            <i nz-icon nzType="edit" style="font-size:10px"></i>
+          </button>
+          <button class="fav-remove-btn" (click)="deleteTag(color); $event.stopPropagation()" title="删除标签">
+            <i nz-icon nzType="close" style="font-size:10px"></i>
+          </button>
+        </li>
+        <li *ngIf="objectKeys(tags).length === 0" class="empty-hint">
+          暂无标签
         </li>
       </ul>
     </div>
@@ -74,7 +105,13 @@
           <button [class.active]="viewMode === 'column'" (click)="setViewMode('column')" nzTooltipTitle="分栏" nz-tooltip>
             <i nz-icon nzType="project"></i>
           </button>
+          <button [class.active]="viewMode === 'gallery'" (click)="setViewMode('gallery')" nzTooltipTitle="画廊" nz-tooltip>
+            <i nz-icon nzType="picture"></i>
+          </button>
         </div>
+        <button class="action-button" nz-dropdown [nzDropdownMenu]="groupMenu" nzTooltipTitle="分组" nz-tooltip>
+          <i nz-icon nzType="group"></i>
+        </button>
         <button class="action-button" nz-dropdown [nzDropdownMenu]="newMenu" nzTooltipTitle="新建" nz-tooltip>
           <i nz-icon nzType="plus"></i>
         </button>
@@ -108,31 +145,52 @@
       </ul>
     </nz-dropdown-menu>
 
+    <nz-dropdown-menu #groupMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="setGroupBy('none')"><i nz-icon nzType="check" *ngIf="groupBy === 'none'" style="visibility:hidden"></i> 无</li>
+        <li nz-menu-item (click)="setGroupBy('kind')"><i nz-icon nzType="check" *ngIf="groupBy === 'kind'"></i> 按种类分组</li>
+        <li nz-menu-item (click)="setGroupBy('date')"><i nz-icon nzType="check" *ngIf="groupBy === 'date'"></i> 按日期分组</li>
+        <li nz-menu-item (click)="setGroupBy('size')"><i nz-icon nzType="check" *ngIf="groupBy === 'size'"></i> 按大小分组</li>
+      </ul>
+    </nz-dropdown-menu>
+
     <!-- File context menu -->
     <nz-dropdown-menu #fileMenu="nzDropdownMenu">
       <ul nz-menu>
         <ng-container *ngIf="selectedFile">
           <li nz-menu-item (click)="open(selectedFile)"><i nz-icon nzType="folder-open"></i> 打开</li>
           <li nz-menu-item *ngIf="!selectedFile.isDir" (click)="downloadFile(selectedFile)"><i nz-icon nzType="download"></i> 下载</li>
+          <li nz-menu-item (click)="openInTerminal()"><i nz-icon nzType="code"></i> 在终端中打开</li>
           <li nz-menu-divider></li>
           <li nz-menu-item (click)="copyFiles()"><i nz-icon nzType="copy"></i> 复制 <span class="menu-shortcut">&#8984;C</span></li>
           <li nz-menu-item (click)="cutFiles()"><i nz-icon nzType="scissor"></i> 剪切 <span class="menu-shortcut">&#8984;X</span></li>
+          <li nz-menu-item (click)="pasteFiles()" [nzDisabled]="!clipboard"><i nz-icon nzType="snippets"></i> 粘贴 <span class="menu-shortcut">&#8984;V</span></li>
+          <li nz-menu-divider></li>
+          <li nz-menu-item (click)="duplicateFile()"><i nz-icon nzType="copy"></i> 复制文件 <span class="menu-shortcut">&#8984;D</span></li>
           <li nz-menu-item (click)="addToFavorites()"><i nz-icon nzType="star"></i> 添加到收藏</li>
           <li nz-menu-divider></li>
           <li nz-menu-item (click)="startRename(selectedFile)"><i nz-icon nzType="edit"></i> 重命名 <span class="menu-shortcut">F2</span></li>
-          <li nz-menu-item nzDanger (click)="deleteFile()"><i nz-icon nzType="delete"></i> 移至废纸篓 <span class="menu-shortcut">&#8984;&#9003;</span></li>
+          <li nz-menu-item (click)="compressFile()"><i nz-icon nzType="file-zip"></i> 压缩</li>
+          <li nz-menu-item *ngIf="isCompressedFile(selectedFile)" (click)="extractFile(selectedFile)"><i nz-icon nzType="folder-open"></i> 解压</li>
           <li nz-menu-divider></li>
           <li nz-submenu nzTitle="标签">
             <ul>
               <li nz-menu-item *ngFor="let color of objectKeys(tagColors)" (click)="toggleTag(selectedFile.path, color)">
                 <span class="tag-dot" [style.background]="tagColors[color]"></span>
-                {{ color }}
+                {{ getTagName(color) }}
                 <i nz-icon nzType="check" *ngIf="hasTag(selectedFile.path, color)" style="margin-left: auto;"></i>
               </li>
+              <li nz-menu-divider *ngIf="objectKeys(tagColors).length > 0"></li>
+              <li nz-menu-item (click)="createTag()"><i nz-icon nzType="plus"></i> 新建标签...</li>
             </ul>
           </li>
           <li nz-menu-divider></li>
-          <li nz-menu-item (click)="getInfo()"><i nz-icon nzType="info-circle"></i> 获取信息 <span class="menu-shortcut">Space</span></li>
+          <li nz-menu-item (click)="getInfo()"><i nz-icon nzType="info-circle"></i> 获取信息 <span class="menu-shortcut">&#8984;I</span></li>
+          <li nz-menu-item (click)="copyPath()"><i nz-icon nzType="link"></i> 拷贝路径</li>
+          <li nz-menu-item (click)="toggleQuickLook(selectedFile)"><i nz-icon nzType="eye"></i> 快速查看 <span class="menu-shortcut">Space</span></li>
+          <li nz-menu-divider></li>
+          <li nz-menu-item nzDanger (click)="deleteFile()"><i nz-icon nzType="delete"></i> 移至废纸篓 <span class="menu-shortcut">&#8984;&#9003;</span></li>
+          <li nz-menu-item nzDanger (click)="permanentlyDelete()"><i nz-icon nzType="delete"></i> 立即删除 <span class="menu-shortcut">&#8997;&#8984;&#9003;</span></li>
         </ng-container>
       </ul>
     </nz-dropdown-menu>
@@ -149,6 +207,13 @@
         <li nz-menu-item (click)="selectAll()"><i nz-icon nzType="check-square"></i> 全选 <span class="menu-shortcut">&#8984;A</span></li>
         <li nz-menu-divider></li>
         <li nz-menu-item (click)="getFolderInfo()"><i nz-icon nzType="info-circle"></i> 显示简介</li>
+        <li nz-menu-item (click)="copyCurrentFolderPath()"><i nz-icon nzType="link"></i> 拷贝路径</li>
+        <li nz-menu-item (click)="openInTerminal()"><i nz-icon nzType="code"></i> 在终端中打开</li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item (click)="toggleHiddenFiles()">
+          <i nz-icon nzType="eye-invisible"></i> {{ showHiddenFiles ? '隐藏' : '显示' }}隐藏文件
+          <span class="menu-shortcut">&#8679;&#8984;.</span>
+        </li>
       </ul>
     </nz-dropdown-menu>
 
@@ -313,6 +378,78 @@
           </div>
         </div>
       </div>
+
+      <!-- ===== Gallery View ===== -->
+      <div *ngIf="viewMode === 'gallery'" class="gallery-view">
+        <div class="gallery-main" *ngIf="galleryFile">
+          <div class="gallery-preview">
+            <i nz-icon [nzType]="getFileIcon(galleryFile)" [nzTheme]="getIconTheme(galleryFile)" [nzTwotoneColor]="getFileIconColor(galleryFile)" style="font-size:160px"></i>
+          </div>
+          <div class="gallery-info">
+            <h2>{{ galleryFile.name }}</h2>
+            <div class="gallery-meta">
+              <span>{{ getFileType(galleryFile) }}</span>
+              <span>{{ galleryFile.isDir ? '--' : formatBytes(galleryFile.size) }}</span>
+              <span>{{ galleryFile.modTime | date:'yyyy/MM/dd HH:mm' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="gallery-strip">
+          <div *ngFor="let file of filteredFiles"
+               class="gallery-thumb"
+               [class.active]="file === galleryFile"
+               (click)="galleryFile = file"
+               (dblclick)="open(file)">
+            <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+            <span>{{ file.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Trash View ===== -->
+      <div *ngIf="showTrash && !loading" class="trash-view" (contextmenu)="$event.preventDefault()">
+        <div class="trash-header">
+          <div class="trash-title">
+            <i nz-icon nzType="delete" nzTheme="twotone" nzTwotoneColor="#8e8e93"></i>
+            <span>废纸篓</span>
+          </div>
+          <div class="trash-actions">
+            <button nz-button nzType="primary" nzSize="small" nzDanger (click)="emptyTrash()" [disabled]="trashItems.length === 0">清倒废纸篓</button>
+            <button nz-button nzSize="small" (click)="exitTrash()">返回</button>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="trashItems.length === 0">
+          <i nz-icon nzType="delete" style="font-size:48px;color:#c7c7cc"></i>
+          <p>废纸篓为空</p>
+        </div>
+        <nz-table *ngIf="trashItems.length > 0" [nzData]="trashItems" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>原位置</th>
+              <th>删除日期</th>
+              <th style="width:80px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of trashItems">
+              <td>
+                <div class="name-content">
+                  <i nz-icon [nzType]="item.isDir ? 'folder' : 'file'" nzTheme="twotone"></i>
+                  <span>{{ item.name }}</span>
+                </div>
+              </td>
+              <td class="text-secondary">{{ item.originalPath }}</td>
+              <td class="text-secondary">{{ item.deletionDate | date:'yyyy/MM/dd HH:mm' }}</td>
+              <td>
+                <button nz-button nzType="text" nzSize="small" (click)="restoreFromTrash(item)" nzTooltipTitle="放回原处">
+                  <i nz-icon nzType="undo"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </div>
     </div>
 
     <!-- ===== Quick Look Overlay ===== -->
@@ -344,14 +481,69 @@
       </div>
     </div>
 
+    <!-- ===== Get Info Panel ===== -->
+    <div class="get-info-overlay" *ngIf="showGetInfo && getInfoFile" (click)="closeGetInfo()">
+      <div class="get-info-panel" (click)="$event.stopPropagation()">
+        <div class="gi-header">
+          <div class="gi-window-buttons">
+            <span class="gi-close" (click)="closeGetInfo()"></span>
+            <span class="gi-min"></span>
+            <span class="gi-max"></span>
+          </div>
+          <span class="gi-title">{{ getInfoFile.name }} 简介</span>
+        </div>
+        <div class="gi-body">
+          <div class="gi-icon-row">
+            <i nz-icon [nzType]="getFileIcon(getInfoFile)" [nzTheme]="getIconTheme(getInfoFile)" [nzTwotoneColor]="getFileIconColor(getInfoFile)" style="font-size:64px"></i>
+          </div>
+          <h3 class="gi-name">{{ getInfoFile.name }}</h3>
+          <div class="gi-sections">
+            <div class="gi-section">
+              <h4>通用</h4>
+              <div class="gi-row"><span class="gi-label">种类:</span><span>{{ getFileType(getInfoFile) }}</span></div>
+              <div class="gi-row"><span class="gi-label">大小:</span><span>{{ getInfoFile.isDir ? '--' : formatBytes(getInfoFile.size) + ' (' + getInfoFile.size.toLocaleString() + ' bytes)' }}</span></div>
+              <div class="gi-row" *ngIf="!getInfoFile.isDir"><span class="gi-label">后缀:</span><span>{{ getInfoFile.name.split('.').pop() }}</span></div>
+            </div>
+            <div class="gi-section">
+              <h4>更多信息</h4>
+              <div class="gi-row"><span class="gi-label">修改日期:</span><span>{{ getInfoFile.modTime | date:'yyyy/MM/dd HH:mm:ss' }}</span></div>
+              <div class="gi-row"><span class="gi-label">权限:</span><span class="gi-mono">{{ getInfoFile.permissions || '--' }}</span></div>
+            </div>
+            <div class="gi-section">
+              <h4>位置</h4>
+              <div class="gi-row"><span class="gi-label">路径:</span><span class="gi-path">{{ getInfoFile.path }}</span></div>
+            </div>
+            <div class="gi-section" *ngIf="getFileTags(getInfoFile.path).length > 0">
+              <h4>标签</h4>
+              <div class="gi-tags">
+                <span *ngFor="let c of getFileTags(getInfoFile.path)" class="gi-tag" [style.background]="tagColors[c]">{{ c }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="gi-actions">
+            <button nz-button nzType="primary" (click)="open(getInfoFile); closeGetInfo()" *ngIf="getInfoFile.isDir">打开</button>
+            <button nz-button nzType="primary" (click)="downloadFile(getInfoFile); closeGetInfo()" *ngIf="!getInfoFile.isDir">下载</button>
+            <button nz-button (click)="copyPath(); closeGetInfo()">拷贝路径</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== Status Bar ===== -->
     <footer class="mac-status-bar">
       <span class="status-info">
-        {{ filteredFiles.length }} 项
-        <span *ngIf="selectedFiles.size > 0">，已选取 {{ selectedFiles.size }} 项</span>
-        <span *ngIf="clipboard">，{{ clipboard.operation === 'copy' ? '已复制' : '已剪切' }} {{ clipboard.files.length }} 项</span>
+        <ng-container *ngIf="showTrash; else normalStatus">
+          {{ trashItems.length }} 项在废纸篓中
+        </ng-container>
+        <ng-template #normalStatus>
+          {{ filteredFiles.length }} 项
+          <span *ngIf="selectedFiles.size > 0">，已选取 {{ selectedFiles.size }} 项</span>
+          <span *ngIf="clipboard">，{{ clipboard.operation === 'copy' ? '已复制' : '已剪切' }} {{ clipboard.files.length }} 项</span>
+          <span *ngIf="groupBy !== 'none'">，已分组</span>
+          <span *ngIf="showHiddenFiles">，已显示隐藏文件</span>
+        </ng-template>
       </span>
-      <span class="status-right" *ngIf="currentPath">
+      <span class="status-right" *ngIf="currentPath && !showTrash">
         {{ currentPath }}
       </span>
     </footer>

@@ -54,4 +54,39 @@ export class FileService {
   searchFiles(path: string, query: string): Observable<FileInfo[]> {
     return this.http.get<FileInfo[]>(`${this.apiUrl}/search?path=${encodeURIComponent(path)}&query=${encodeURIComponent(query)}`);
   }
+
+  // Trash
+  trashMove(path: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/trash/move`, { path });
+  }
+  trashList(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/trash/list`);
+  }
+  trashRestore(name: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/trash/restore`, { name });
+  }
+  trashEmpty(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/trash/empty`, {});
+  }
+
+  // Duplicate
+  duplicateFile(path: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/duplicate`, { path });
+  }
+
+  // Compress / Extract
+  compressFile(path: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/compress`, { path });
+  }
+  extractFile(path: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/extract`, { path });
+  }
+
+  // Recent
+  getRecent(): Observable<FileInfo[]> {
+    return this.http.get<FileInfo[]>(`${this.apiUrl}/recent`);
+  }
+  addRecent(file: FileInfo): Observable<any> {
+    return this.http.post(`${this.apiUrl}/recent/add`, file);
+  }
 }

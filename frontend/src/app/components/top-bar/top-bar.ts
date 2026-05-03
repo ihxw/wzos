@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
@@ -12,9 +12,10 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './top-bar.html',
   styleUrls: ['./top-bar.scss']
 })
-export class TopBar implements OnInit {
+export class TopBar implements OnInit, OnDestroy {
   currentTime: Date = new Date();
   activeAppName: string = 'WZOS';
+  focusedAppId: string = '';
   username: string = '';
   private timer: any;
 
@@ -23,11 +24,14 @@ export class TopBar implements OnInit {
     private authService: AuthService
   ) {
     this.username = this.authService.username;
-    this.windowManager.windows$.subscribe(windows => {
-      const focused = windows.reduce((prev, curr) =>
-        curr.zIndex > (prev?.zIndex ?? 0) ? curr : prev, null as any);
+    this.windowManager.windows$.subscribe(() => {
+      const focused = this.windowManager.getFocusedWindow();
       if (focused) {
         this.activeAppName = focused.title;
+        this.focusedAppId = focused.appId;
+      } else {
+        this.activeAppName = 'WZOS';
+        this.focusedAppId = '';
       }
     });
   }
@@ -39,14 +43,15 @@ export class TopBar implements OnInit {
   }
 
   ngOnDestroy() {
-    if (this.timer) {
-      clearInterval(this.timer);
-    }
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  onFileMenuClick(action: string): void {
+    this.windowManager.dispatchMenuAction(action);
   }
 
   logout(): void {
     this.authService.logout();
-    // Notify parent via window event
     window.location.reload();
   }
 }

@@ -1,6 +1,6 @@
 <app-login *ngIf="!isAuthenticated" (loginSuccess)="onLoginSuccess()"></app-login>
 
-<div class="desktop" *ngIf="isAuthenticated" (contextmenu)="contextMenu($event, menu)">
+<div class="desktop" *ngIf="isAuthenticated" (contextmenu)="contextMenu($event, menu)" [ngStyle]="desktopStyle">
   <app-top-bar></app-top-bar>
 
   <div class="desktop-content">
@@ -8,6 +8,7 @@
       *ngFor="let app of desktopApps"
       [app]="app"
       (onOpen)="openApp($event)"
+      (onContextMenu)="openAppContextMenu($event, appMenu)"
       cdkDrag
       cdkDragBoundary=".desktop-content">
     </app-desktop-icon>
@@ -26,6 +27,89 @@
     (maximize)="maximizeWindow($event)"
     (focus)="focusWindow($event)">
   </app-window-wrapper>
+
+  <!-- ===== Wallpaper Picker ===== -->
+  <div class="wallpaper-picker-overlay" *ngIf="showWallpaperPicker" (click)="closeWallpaperPicker()">
+    <div class="wallpaper-picker" (click)="$event.stopPropagation()">
+      <div class="wp-header">
+        <button class="wp-close-btn" (click)="closeWallpaperPicker()">&times;</button>
+        <span class="wp-title">更改桌面背景</span>
+        <div style="width:24px"></div>
+      </div>
+      <div class="wp-body">
+        <!-- Built-in presets -->
+        <div class="wp-section-title">动态渐变</div>
+        <div class="wp-grid">
+          <div *ngFor="let w of wallpapers.slice(0, 6)"
+               class="wp-item"
+               [class.active]="wallpaperType === 'builtin' && currentWallpaperId === w.id"
+               (click)="selectWallpaper(w.id)">
+            <div class="wp-preview" [style.background]="w.css"></div>
+          </div>
+        </div>
+
+        <div class="wp-section-title">纯色</div>
+        <div class="wp-grid">
+          <div *ngFor="let w of wallpapers.slice(6, 16)"
+               class="wp-item"
+               [class.active]="wallpaperType === 'builtin' && currentWallpaperId === w.id"
+               (click)="selectWallpaper(w.id)">
+            <div class="wp-preview" [style.background]="w.css"></div>
+          </div>
+        </div>
+
+        <div class="wp-section-title">渐变</div>
+        <div class="wp-grid">
+          <div *ngFor="let w of wallpapers.slice(16)"
+               class="wp-item"
+               [class.active]="wallpaperType === 'builtin' && currentWallpaperId === w.id"
+               (click)="selectWallpaper(w.id)">
+            <div class="wp-preview" [style.background]="w.css"></div>
+          </div>
+        </div>
+
+        <!-- Local server images -->
+        <div class="wp-section-title">服务器本地图片</div>
+        <div class="wp-local-browser">
+          <div class="wp-local-nav">
+            <button (click)="wpGoUpLocal()" title="上层文件夹"><i nz-icon nzType="arrow-up"></i></button>
+            <span class="wp-local-path">{{ wpLocalPath }}</span>
+          </div>
+          <div class="wp-local-files" *ngIf="!wpLocalLoading">
+            <div *ngFor="let f of wpLocalFiles"
+                 class="wp-local-item"
+                 [class.active]="wallpaperType === 'local-image' && customImageUrl === f.path"
+                 (click)="selectLocalWallpaper(f)">
+              <i nz-icon [nzType]="f.isDir ? 'folder' : 'picture'" nzTheme="twotone" [nzTwotoneColor]="f.isDir ? '#007aff' : '#af52de'"></i>
+              <span>{{ f.name }}</span>
+              <span class="wp-local-hint" *ngIf="f.isDir">→</span>
+            </div>
+            <div *ngIf="wpLocalFiles.length === 0" class="wp-local-empty">
+              此文件夹中没有图片
+            </div>
+          </div>
+          <div class="wp-local-loading" *ngIf="wpLocalLoading">
+            <i nz-icon nzType="loading" nzSpin></i> 加载中...
+          </div>
+        </div>
+
+        <!-- Custom image URL -->
+        <div class="wp-section-title">自定义图片 URL</div>
+        <div class="wp-custom-url">
+          <input type="text"
+                 placeholder="输入图片 URL..."
+                 [(ngModel)]="customImageUrl"
+                 (keydown.enter)="applyCustomImage()" />
+          <button (click)="applyCustomImage()">应用</button>
+        </div>
+
+        <!-- Reset -->
+        <div class="wp-reset">
+          <button (click)="resetWallpaper()">恢复默认背景</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <nz-dropdown-menu #menu="nzDropdownMenu">
@@ -36,5 +120,52 @@
     <li nz-menu-item (click)="handleMenuAction('Change Wallpaper')">更改桌面背景...</li>
     <li nz-menu-divider></li>
     <li nz-menu-item (click)="handleMenuAction('Refresh')">刷新</li>
+  </ul>
+</nz-dropdown-menu>
+
+<!-- ===== App icon context menu ===== -->
+<nz-dropdown-menu #appMenu="nzDropdownMenu">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); min-width: 200px;">
+
+    <!-- Terminal -->
+    <ng-container *ngIf="rightClickedApp?.id === 'terminal'">
+      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
+      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
+    </ng-container>
+
+    <!-- Files -->
+    <ng-container *ngIf="rightClickedApp?.id === 'file-manager'">
+      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
+      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
+      <li nz-menu-item (click)="handleAppMenuAction('new-folder')">新建文件夹</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
+    </ng-container>
+
+    <!-- Image Viewer -->
+    <ng-container *ngIf="rightClickedApp?.id === 'image-viewer'">
+      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
+      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
+    </ng-container>
+
+    <!-- Others (app-manager, system-settings, firewall, etc.) -->
+    <ng-container *ngIf="rightClickedApp?.id && !['terminal','file-manager','image-viewer'].includes(rightClickedApp?.id ?? '')">
+      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
+    </ng-container>
+
   </ul>
 </nz-dropdown-menu>

@@ -1,4 +1,4 @@
-<div class="icon-container" (dblclick)="open()">
+<div class="icon-container" (dblclick)="open()" (contextmenu)="contextMenu($event)">
   <div class="icon">
     <!-- Using ng-zorro icon or image -->
     <i *ngIf="app.icon.startsWith('ant-')" nz-icon [nzType]="app.icon.replace('ant-', '')" nzTheme="outline"></i>
