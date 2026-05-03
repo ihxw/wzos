@@ -127,8 +127,8 @@
       }
 
       &.active {
-        border-color: #007aff;
-        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+        border-color: var(--wzos-accent-color, #007aff);
+        box-shadow: 0 0 0 2px var(--wzos-accent-color-light, rgba(0, 122, 255, 0.3));
       }
     }
 
@@ -146,21 +146,21 @@
         font-size: 12px;
         outline: none;
         &:focus {
-          border-color: #007aff;
-          box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+          border-color: var(--wzos-accent-color, #007aff);
+          box-shadow: 0 0 0 3px var(--wzos-accent-color-light, rgba(0, 122, 255, 0.12));
         }
       }
 
       button {
         padding: 6px 14px;
         border: none;
-        background: #007aff;
+        background: var(--wzos-accent-color, #007aff);
         color: #fff;
         border-radius: 6px;
         font-size: 12px;
         cursor: pointer;
         white-space: nowrap;
-        &:hover { background: #0060d0; }
+        &:hover { filter: brightness(0.9); }
       }
     }
 
@@ -223,8 +223,8 @@
           &:hover { background: rgba(0, 0, 0, 0.03); }
 
           &.active {
-            background: rgba(0, 122, 255, 0.08);
-            border-left-color: #007aff;
+            background: var(--wzos-accent-color-light, rgba(0, 122, 255, 0.08));
+            border-left-color: var(--wzos-accent-color, #007aff);
           }
         }
 
@@ -253,7 +253,7 @@
       button {
         border: none;
         background: transparent;
-        color: #007aff;
+        color: var(--wzos-accent-color, #007aff);
         font-size: 12px;
         cursor: pointer;
         &:hover { text-decoration: underline; }

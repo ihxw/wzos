@@ -8,13 +8,14 @@
   justify-content: center;
 
   .dock-glass {
-    background: rgba(255, 255, 255, 0.55);
+    background: var(--wzos-bg-dock);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-radius: 18px;
     padding: 8px 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--wzos-shadow-dock);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: background 0.2s;
   }
 
   .dock-items {
@@ -53,8 +54,9 @@
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.4);
+      background: var(--wzos-text-primary);
       margin-top: 4px;
+      opacity: 0.5;
     }
 
     .tooltip {
@@ -62,8 +64,8 @@
       top: -32px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.9);
-      color: #1d1d1f;
+      background: var(--wzos-bg-card);
+      color: var(--wzos-text-primary);
       padding: 4px 10px;
       border-radius: 6px;
       font-size: 12px;
@@ -72,6 +74,7 @@
       pointer-events: none;
       transition: opacity 0.2s;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      border: 1px solid var(--wzos-border-subtle);
 
       &::after {
         content: '';
@@ -81,7 +84,7 @@
         transform: translateX(-50%);
         border-left: 4px solid transparent;
         border-right: 4px solid transparent;
-        border-top: 4px solid rgba(255, 255, 255, 0.9);
+        border-top: 4px solid var(--wzos-bg-card);
       }
     }
 

@@ -2,6 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
+// ===== CSS Custom Properties (Light Mode Default) =====
+:root {
+  --wzos-accent-color: #007aff;
+  --wzos-accent-color-light: rgba(0, 122, 255, 0.2);
+  --wzos-accent-color-medium: rgba(0, 122, 255, 0.4);
+
+  // Surfaces
+  --wzos-bg-window: #ffffff;
+  --wzos-bg-titlebar: #f5f5f7;
+  --wzos-bg-sidebar: #f2f2f2;
+  --wzos-bg-content: #ffffff;
+  --wzos-bg-card: #f5f5f7;
+  --wzos-bg-topbar: rgba(245, 245, 247, 0.8);
+  --wzos-bg-dock: rgba(255, 255, 255, 0.55);
+  --wzos-bg-segmented: #e8e8ed;
+  --wzos-bg-hover: rgba(0, 0, 0, 0.03);
+  --wzos-bg-active: rgba(0, 0, 0, 0.06);
+
+  // Borders
+  --wzos-border-color: #d1d1d6;
+  --wzos-border-subtle: rgba(0, 0, 0, 0.06);
+  --wzos-border-strong: #c7c7cc;
+
+  // Text
+  --wzos-text-primary: #1d1d1f;
+  --wzos-text-secondary: #6e6e73;
+  --wzos-text-tertiary: #8e8e93;
+  --wzos-text-placeholder: #adadad;
+
+  // Scrollbar
+  --wzos-scrollbar-show: auto;
+  --wzos-scrollbar-thumb: #c7c7cc;
+  --wzos-scrollbar-track: transparent;
+
+  // Window tint (from wallpaper)
+  --wzos-window-tint: transparent;
+
+  // Shadows
+  --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.12);
+  --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+// ===== Dark Mode =====
+.wzos-dark {
+  --wzos-bg-window: #2c2c2e;
+  --wzos-bg-titlebar: #38383a;
+  --wzos-bg-sidebar: #2a2a2c;
+  --wzos-bg-content: #1e1e20;
+  --wzos-bg-card: #2c2c2e;
+  --wzos-bg-topbar: rgba(44, 44, 46, 0.85);
+  --wzos-bg-dock: rgba(44, 44, 46, 0.55);
+  --wzos-bg-segmented: #3a3a3c;
+  --wzos-bg-hover: rgba(255, 255, 255, 0.06);
+  --wzos-bg-active: rgba(255, 255, 255, 0.1);
+
+  --wzos-border-color: #48484a;
+  --wzos-border-subtle: rgba(255, 255, 255, 0.06);
+  --wzos-border-strong: #545456;
+
+  --wzos-text-primary: #f5f5f7;
+  --wzos-text-secondary: #98989d;
+  --wzos-text-tertiary: #8e8e93;
+  --wzos-text-placeholder: #6e6e73;
+
+  --wzos-scrollbar-thumb: #545456;
+  --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.35);
+  --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  // Make top bar text lighter in dark mode
+  .top-bar {
+    color: #f5f5f7;
+  }
+}
+
+// Auto mode: follow system preference
+@media (prefers-color-scheme: dark) {
+  html:not(.wzos-light):not(.wzos-dark) {
+    --wzos-bg-window: #2c2c2e;
+    --wzos-bg-titlebar: #38383a;
+    --wzos-bg-sidebar: #2a2a2c;
+    --wzos-bg-content: #1e1e20;
+    --wzos-bg-card: #2c2c2e;
+    --wzos-bg-topbar: rgba(44, 44, 46, 0.85);
+    --wzos-bg-dock: rgba(44, 44, 46, 0.55);
+    --wzos-bg-segmented: #3a3a3c;
+    --wzos-bg-hover: rgba(255, 255, 255, 0.06);
+    --wzos-bg-active: rgba(255, 255, 255, 0.1);
+
+    --wzos-border-color: #48484a;
+    --wzos-border-subtle: rgba(255, 255, 255, 0.06);
+    --wzos-border-strong: #545456;
+
+    --wzos-text-primary: #f5f5f7;
+    --wzos-text-secondary: #98989d;
+    --wzos-text-tertiary: #8e8e93;
+    --wzos-text-placeholder: #6e6e73;
+
+    --wzos-scrollbar-thumb: #545456;
+    --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.35);
+    --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -10,12 +116,33 @@ html, body {
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   user-select: none;
+  background: #1c1c1e;
+}
+
+// ===== Scrollbar Theming =====
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--wzos-scrollbar-track, transparent);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--wzos-scrollbar-thumb, #c7c7cc);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wzos-text-tertiary, #8e8e93);
+}
+
+// Always-visible scrollbar mode
+html:root {
+  --wzos-scrollbar-track: transparent;
 }
 
 .desktop {
   width: 100%;
   height: 100vh;
-  background: linear-gradient(135deg, #e0e7ef 0%, #c5d1e0 50%, #d4c5e0 100%);
   position: relative;
 }
 
@@ -30,4 +157,37 @@ html, body {
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 20px;
+}
+
+// ===== Wallpaper Tinting =====
+.wzos-tinted-windows .macos-window .window-content {
+  background: color-mix(in srgb, var(--wzos-bg-content, #ffffff) 92%, var(--wzos-window-tint, #6b3fa0) 8%);
+}
+
+// ===== Scrollbar Visibility =====
+.wzos-scrollbars-always {
+  ::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--wzos-scrollbar-track, rgba(0, 0, 0, 0.05)) !important;
+  }
+}
+
+// ===== Accent color: links, focus rings, selections =====
+::selection {
+  background: var(--wzos-highlight-color-light, rgba(0, 122, 255, 0.2));
+  color: inherit;
+}
+
+a, .link {
+  color: var(--wzos-accent-color, #007aff);
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--wzos-accent-color, #007aff);
+  outline-offset: 1px;
 }

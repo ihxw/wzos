@@ -31,6 +31,64 @@ interface MenuCategory {
   color: string;
 }
 
+interface AccentColor {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface AppearanceSettings {
+  appearanceMode: 'light' | 'dark' | 'auto';
+  accentColor: string;
+  highlightColor: string;
+  scrollBarBehavior: 'auto' | 'when-scrolling' | 'always';
+  scrollBarClickAction: 'next-page' | 'jump-to-spot';
+  preferHorizontalTabs: boolean;
+  allowWallpaperTinting: boolean;
+  defaultBrowser: string;
+}
+
+const ACCENT_COLORS: AccentColor[] = [
+  { id: 'blue', name: '蓝色', color: '#007aff' },
+  { id: 'purple', name: '紫色', color: '#af52de' },
+  { id: 'pink', name: '粉色', color: '#ff2d55' },
+  { id: 'red', name: '红色', color: '#ff3b30' },
+  { id: 'orange', name: '橙色', color: '#ff9500' },
+  { id: 'yellow', name: '黄色', color: '#ffcc00' },
+  { id: 'green', name: '绿色', color: '#34c759' },
+  { id: 'graphite', name: '石墨色', color: '#8e8e93' },
+];
+
+const HIGHLIGHT_COLORS = [
+  { value: 'accent', label: '强调色' },
+  { value: '#007aff', label: '蓝色' },
+  { value: '#af52de', label: '紫色' },
+  { value: '#ff2d55', label: '粉色' },
+  { value: '#ff3b30', label: '红色' },
+  { value: '#ff9500', label: '橙色' },
+  { value: '#ffcc00', label: '黄色' },
+  { value: '#34c759', label: '绿色' },
+  { value: '#8e8e93', label: '石墨色' },
+];
+
+const BROWSERS = [
+  { value: 'safari', label: 'Safari.app' },
+  { value: 'chrome', label: 'Google Chrome.app' },
+  { value: 'firefox', label: 'Firefox.app' },
+  { value: 'edge', label: 'Microsoft Edge.app' },
+];
+
+const DEFAULT_SETTINGS: AppearanceSettings = {
+  appearanceMode: 'auto',
+  accentColor: 'blue',
+  highlightColor: 'accent',
+  scrollBarBehavior: 'auto',
+  scrollBarClickAction: 'next-page',
+  preferHorizontalTabs: false,
+  allowWallpaperTinting: true,
+  defaultBrowser: 'safari',
+};
+
 @Component({
   selector: 'app-system-settings',
   standalone: true,
@@ -52,10 +110,18 @@ export class SystemSettingsComponent implements OnInit {
     { key: 'services', label: '服务管理', icon: 'M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z', color: '#ff9500' },
   ];
 
+  // Appearance settings
+  appearance: AppearanceSettings = { ...DEFAULT_SETTINGS };
+  accentColors = ACCENT_COLORS;
+  highlightColors = HIGHLIGHT_COLORS;
+  browsers = BROWSERS;
+
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.loadSystemInfo();
+    this.loadAppearanceSettings();
+    this.applyAppearance();
   }
 
   selectMenu(key: string) {
@@ -114,5 +180,113 @@ export class SystemSettingsComponent implements OnInit {
       label += ` (${cores} 核心)`;
     }
     return label;
+  }
+
+  // ===== Appearance =====
+
+  loadAppearanceSettings(): void {
+    try {
+      const saved = localStorage.getItem('wzos-appearance');
+      if (saved) {
+        this.appearance = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      }
+    } catch {
+      this.appearance = { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  saveAppearanceSettings(): void {
+    localStorage.setItem('wzos-appearance', JSON.stringify(this.appearance));
+    this.applyAppearance();
+  }
+
+  selectAppearanceMode(mode: 'light' | 'dark' | 'auto'): void {
+    this.appearance.appearanceMode = mode;
+    this.saveAppearanceSettings();
+  }
+
+  selectAccentColor(colorId: string): void {
+    this.appearance.accentColor = colorId;
+    this.saveAppearanceSettings();
+  }
+
+  onHighlightColorChange(): void {
+    this.saveAppearanceSettings();
+  }
+
+  onScrollBarBehaviorChange(): void {
+    this.saveAppearanceSettings();
+  }
+
+  onScrollBarClickActionChange(): void {
+    this.saveAppearanceSettings();
+  }
+
+  onToggleChange(): void {
+    this.saveAppearanceSettings();
+  }
+
+  onBrowserChange(): void {
+    this.saveAppearanceSettings();
+  }
+
+  get accentColorValue(): string {
+    const c = this.accentColors.find(a => a.id === this.appearance.accentColor);
+    return c ? c.color : '#007aff';
+  }
+
+  get highlightColorValue(): string {
+    if (this.appearance.highlightColor === 'accent') {
+      return this.accentColorValue;
+    }
+    return this.appearance.highlightColor;
+  }
+
+  applyAppearance(): void {
+    const root = document.documentElement;
+    const accent = this.accentColorValue;
+    const highlight = this.highlightColorValue;
+
+    // Apply accent color
+    root.style.setProperty('--wzos-accent-color', accent);
+    root.style.setProperty('--wzos-accent-color-light', accent + '33');
+    root.style.setProperty('--wzos-accent-color-medium', accent + '66');
+
+    // Apply highlight (selection) color
+    root.style.setProperty('--wzos-highlight-color', highlight);
+    root.style.setProperty('--wzos-highlight-color-light', highlight + '33');
+
+    // Apply dark/light mode
+    root.classList.remove('wzos-light', 'wzos-dark');
+    if (this.appearance.appearanceMode === 'dark') {
+      root.classList.add('wzos-dark');
+    } else if (this.appearance.appearanceMode === 'light') {
+      root.classList.add('wzos-light');
+    }
+
+    // Wallpaper tinting
+    if (this.appearance.allowWallpaperTinting) {
+      root.classList.add('wzos-tinted-windows');
+    } else {
+      root.classList.remove('wzos-tinted-windows');
+    }
+
+    // Scroll bar behavior
+    if (this.appearance.scrollBarBehavior === 'always') {
+      root.classList.add('wzos-scrollbars-always');
+      root.classList.remove('wzos-scrollbars-hidden');
+    } else if (this.appearance.scrollBarBehavior === 'when-scrolling') {
+      root.classList.add('wzos-scrollbars-hidden');
+      root.classList.remove('wzos-scrollbars-always');
+    } else {
+      root.classList.remove('wzos-scrollbars-always', 'wzos-scrollbars-hidden');
+    }
+
+    // Prefer horizontal tabs
+    if (this.appearance.preferHorizontalTabs) {
+      root.classList.add('wzos-horizontal-tabs');
+    } else {
+      root.classList.remove('wzos-horizontal-tabs');
+    }
   }
 }

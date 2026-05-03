@@ -25,6 +25,32 @@ interface WallpaperPreset {
   type: 'gradient' | 'color' | 'image';
 }
 
+// Dominant colors for wallpaper presets (used for window tinting)
+const WALLPAPER_TINT_COLORS: Record<string, string> = {
+  sonoma: '#6b3fa0',
+  ventura: '#f76b6b',
+  monterey: '#d94e8c',
+  bigsur: '#00a4e4',
+  catalina: '#5a7394',
+  mojave: '#c9a06c',
+  'space-gray': '#2c2c2e',
+  midnight: '#1a2332',
+  ocean: '#0077b6',
+  forest: '#2d5a27',
+  rose: '#e8a0bf',
+  sunset: '#e07040',
+  lavender: '#b8a9c9',
+  cream: '#f5f0e8',
+  charcoal: '#1c1c1e',
+  sky: '#87ceeb',
+  sunrise: '#ff7e5f',
+  twilight: '#e67e6e',
+  aurora: '#2d8a7a',
+  cherry: '#fcb69f',
+  mint: '#a8e6cf',
+  slate: '#4ca1af',
+};
+
 const WALLPAPER_PRESETS: WallpaperPreset[] = [
   // macOS-style gradients
   { id: 'sonoma', name: 'Sonoma', type: 'gradient', css: 'linear-gradient(135deg, #2c1b4d 0%, #6b3fa0 30%, #e67e6e 60%, #f3c46c 100%)' },
@@ -105,6 +131,7 @@ export class App implements OnInit {
     });
 
     this.loadWallpaper();
+    this.initAppearance();
   }
 
   onLoginSuccess(): void {
@@ -259,6 +286,17 @@ export class App implements OnInit {
 
   applyWallpaper(): void {
     this.saveWallpaper();
+    this.applyWallpaperTint();
+  }
+
+  applyWallpaperTint(): void {
+    let tintColor = '#6b3fa0'; // default
+    if (this.wallpaperType === 'builtin') {
+      tintColor = WALLPAPER_TINT_COLORS[this.currentWallpaperId] || '#6b3fa0';
+    } else if (this.wallpaperType === 'custom-image' || this.wallpaperType === 'local-image') {
+      tintColor = '#888888'; // neutral tint for custom images
+    }
+    document.documentElement.style.setProperty('--wzos-window-tint', tintColor);
   }
 
   applyCustomImage(): void {
@@ -335,13 +373,69 @@ export class App implements OnInit {
         this.customImageUrl = data.customImageUrl || '';
         if (data.localPath) this.wpLocalPath = data.localPath;
         this.applyWallpaper();
+        this.applyWallpaperTint();
       } else {
         this.currentWallpaperId = 'sonoma';
         this.applyWallpaper();
+        this.applyWallpaperTint();
       }
     } catch {
       this.currentWallpaperId = 'sonoma';
       this.applyWallpaper();
+      this.applyWallpaperTint();
+    }
+  }
+
+  private initAppearance(): void {
+    const defaultAppearance = {
+      appearanceMode: 'auto', accentColor: 'blue', highlightColor: 'accent',
+      scrollBarBehavior: 'auto', scrollBarClickAction: 'next-page',
+      preferHorizontalTabs: false, allowWallpaperTinting: true, defaultBrowser: 'safari',
+    };
+    const accentMap: Record<string, string> = {
+      blue: '#007aff', purple: '#af52de', pink: '#ff2d55', red: '#ff3b30',
+      orange: '#ff9500', yellow: '#ffcc00', green: '#34c759', graphite: '#8e8e93',
+    };
+
+    let settings = defaultAppearance;
+    try {
+      const saved = localStorage.getItem('wzos-appearance');
+      if (saved) {
+        settings = { ...defaultAppearance, ...JSON.parse(saved) };
+      }
+    } catch {}
+
+    const root = document.documentElement;
+    const accent = accentMap[settings.accentColor] || '#007aff';
+    const highlight = settings.highlightColor === 'accent' ? accent : settings.highlightColor;
+
+    root.style.setProperty('--wzos-accent-color', accent);
+    root.style.setProperty('--wzos-accent-color-light', accent + '33');
+    root.style.setProperty('--wzos-accent-color-medium', accent + '66');
+    root.style.setProperty('--wzos-highlight-color', highlight);
+    root.style.setProperty('--wzos-highlight-color-light', highlight + '33');
+
+    root.classList.remove('wzos-light', 'wzos-dark');
+    if (settings.appearanceMode === 'dark') {
+      root.classList.add('wzos-dark');
+    } else if (settings.appearanceMode === 'light') {
+      root.classList.add('wzos-light');
+    }
+
+    if (settings.allowWallpaperTinting) {
+      root.classList.add('wzos-tinted-windows');
+    } else {
+      root.classList.remove('wzos-tinted-windows');
+    }
+
+    if (settings.scrollBarBehavior === 'always') {
+      root.classList.add('wzos-scrollbars-always');
+    } else if (settings.scrollBarBehavior === 'when-scrolling') {
+      root.classList.add('wzos-scrollbars-hidden');
+    }
+
+    if (settings.preferHorizontalTabs) {
+      root.classList.add('wzos-horizontal-tabs');
     }
   }
 
