@@ -146,18 +146,6 @@ html:root {
   position: relative;
 }
 
-.desktop-content {
-  position: absolute;
-  top: 28px;
-  bottom: 80px;
-  left: 0;
-  right: 0;
-  padding: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 20px;
-}
 
 // ===== Wallpaper Tinting =====
 .wzos-tinted-windows .macos-window .window-content {

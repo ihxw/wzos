@@ -1100,7 +1100,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     } else if (mod && event.shiftKey && event.key === 'N') {
       event.preventDefault();
       this.createNew(true);
-    } else if (mod && event.shiftKey && event.key === '.') {
+    } else if (mod && event.shiftKey && event.code === 'Period') {
       event.preventDefault();
       this.toggleHiddenFiles();
     } else if (mod && event.key === 'i') {

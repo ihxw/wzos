@@ -9,14 +9,21 @@
 }
 
 .desktop-content {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 20px;
+  position: absolute;
+  top: 28px;
+  bottom: 80px;
+  left: 0;
+  right: 0;
   z-index: 1;
+}
+
+// Rubber-band selection
+.rubber-band {
+  position: fixed;
+  border: 1px solid var(--wzos-accent-color, #007aff);
+  background: var(--wzos-accent-color-light, rgba(0, 122, 255, 0.15));
+  pointer-events: none;
+  z-index: 50;
 }
 
 // ===== Wallpaper Picker Overlay =====

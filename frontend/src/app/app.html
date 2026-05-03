@@ -3,15 +3,25 @@
 <div class="desktop" *ngIf="isAuthenticated" (contextmenu)="contextMenu($event, menu)" [ngStyle]="desktopStyle">
   <app-top-bar></app-top-bar>
 
-  <div class="desktop-content">
-    <app-desktop-icon
-      *ngFor="let app of desktopApps"
-      [app]="app"
-      (onOpen)="openApp($event)"
-      (onContextMenu)="openAppContextMenu($event, appMenu)"
-      cdkDrag
-      cdkDragBoundary=".desktop-content">
-    </app-desktop-icon>
+  <div class="desktop-content"
+       (mousedown)="onDesktopMouseDown($event)">
+    <app-desktop-file
+      *ngFor="let file of filteredDesktopFiles"
+      [file]="file"
+      [selected]="isDesktopFileSelected(file)"
+      [position]="getDesktopFilePos(file)"
+      (onOpenFile)="openDesktopFile($event)"
+      (onSelect)="onDesktopFileSelect($event)"
+      (onDragStart)="onDesktopFileDragStart($event)">
+    </app-desktop-file>
+
+    <!-- Rubber-band selection overlay -->
+    <div class="rubber-band" *ngIf="rubberBand.active"
+         [style.left.px]="rubberBand.x"
+         [style.top.px]="rubberBand.y"
+         [style.width.px]="rubberBand.w"
+         [style.height.px]="rubberBand.h">
+    </div>
   </div>
 
   <app-dock
@@ -117,55 +127,11 @@
     <li nz-menu-item (click)="handleMenuAction('New Folder')">新建文件夹</li>
     <li nz-menu-item (click)="handleMenuAction('Get Info')">显示简介</li>
     <li nz-menu-divider></li>
+    <li nz-menu-item (click)="handleMenuAction('Toggle Hidden')">{{ showHiddenDesktopFiles ? '隐藏' : '显示' }}隐藏文件</li>
+    <li nz-menu-divider></li>
     <li nz-menu-item (click)="handleMenuAction('Change Wallpaper')">更改桌面背景...</li>
     <li nz-menu-divider></li>
     <li nz-menu-item (click)="handleMenuAction('Refresh')">刷新</li>
   </ul>
 </nz-dropdown-menu>
 
-<!-- ===== App icon context menu ===== -->
-<nz-dropdown-menu #appMenu="nzDropdownMenu">
-  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); min-width: 200px;">
-
-    <!-- Terminal -->
-    <ng-container *ngIf="rightClickedApp?.id === 'terminal'">
-      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
-      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
-    </ng-container>
-
-    <!-- Files -->
-    <ng-container *ngIf="rightClickedApp?.id === 'file-manager'">
-      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
-      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
-      <li nz-menu-item (click)="handleAppMenuAction('new-folder')">新建文件夹</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
-    </ng-container>
-
-    <!-- Image Viewer -->
-    <ng-container *ngIf="rightClickedApp?.id === 'image-viewer'">
-      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
-      <li nz-menu-item (click)="handleAppMenuAction('new-window')">新建窗口</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
-    </ng-container>
-
-    <!-- Others (app-manager, system-settings, firewall, etc.) -->
-    <ng-container *ngIf="rightClickedApp?.id && !['terminal','file-manager','image-viewer'].includes(rightClickedApp?.id ?? '')">
-      <li nz-menu-item (click)="handleAppMenuAction('open')">打开</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('show-info')">显示简介</li>
-      <li nz-menu-divider></li>
-      <li nz-menu-item (click)="handleAppMenuAction('remove-from-desktop')">从桌面移除</li>
-    </ng-container>
-
-  </ul>
-</nz-dropdown-menu>

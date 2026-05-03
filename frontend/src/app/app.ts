@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { TopBar } from './components/top-bar/top-bar';
 import { Dock } from './components/dock/dock';
-import { DesktopIcon } from './components/desktop-icon/desktop-icon';
+import { DesktopFileComponent } from './components/desktop-file/desktop-file';
 import { DesktopApp } from './core/models/app.model';
+import { FileInfo } from './core/services/file.service';
 import { TerminalComponent } from './components/terminal/terminal';
 import { FileManagerComponent } from './components/file-manager/file-manager';
 import { MediaViewerComponent } from './components/media-viewer/media-viewer';
 import { SystemSettingsComponent } from './apps/system-settings/system-settings';
+import { AppManagerComponent } from './apps/app-manager/app-manager';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -82,7 +84,7 @@ const WALLPAPER_PRESETS: WallpaperPreset[] = [
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, NzIconModule, TopBar, Dock, DesktopIcon, DragDropModule, NzDropDownModule, WindowWrapperComponent, LoginComponent],
+  imports: [CommonModule, FormsModule, NzIconModule, TopBar, Dock, DesktopFileComponent, DragDropModule, NzDropDownModule, WindowWrapperComponent, LoginComponent],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
@@ -93,14 +95,150 @@ export class App implements OnInit {
     { id: 'file-manager', name: 'Files', icon: '/icon_files.png' },
     { id: 'image-viewer', name: '图片预览', icon: '/icon_preview.svg' },
     { id: 'terminal', name: 'Terminal', icon: '/icon_terminal.png' },
-    { id: 'app-manager', name: 'App Manager', icon: '/icon_app_manager.png' },
     { id: 'system-settings', name: 'System Settings', icon: '/icon_settings.png' },
     { id: 'firewall', name: 'Firewall', icon: '/icon_firewall.png' }
   ];
 
+  appManagerEntry: DesktopApp = { id: 'app-manager', name: 'App Manager', icon: '/icon_app_manager.png' };
+
   desktopApps: DesktopApp[] = [];
   dockApps: DesktopApp[] = [];
   openWindows: WindowState[] = [];
+
+  // Desktop files (from ~/Desktop folder)
+  desktopFiles: FileInfo[] = [];
+  desktopPath = '';
+  selectedDesktopFiles: Set<string> = new Set();
+  showHiddenDesktopFiles = false;
+  desktopFilePositions: Record<string, { x: number; y: number }> = {};
+
+  // Rubber-band selection
+  rubberBand = { active: false, startX: 0, startY: 0, x: 0, y: 0, w: 0, h: 0 };
+
+  get filteredDesktopFiles(): FileInfo[] {
+    if (this.showHiddenDesktopFiles) return this.desktopFiles;
+    return this.desktopFiles.filter(f => !f.name.startsWith('.'));
+  }
+
+  toggleHiddenDesktopFiles(): void {
+    this.showHiddenDesktopFiles = !this.showHiddenDesktopFiles;
+  }
+
+  // ===== Desktop file selection & dragging =====
+
+  onDesktopFileSelect(data: { file: FileInfo; event: MouseEvent }): void {
+    const ctrl = data.event.ctrlKey || data.event.metaKey;
+    if (ctrl) {
+      if (this.selectedDesktopFiles.has(data.file.path)) {
+        this.selectedDesktopFiles.delete(data.file.path);
+      } else {
+        this.selectedDesktopFiles.add(data.file.path);
+      }
+    } else {
+      this.selectedDesktopFiles.clear();
+      this.selectedDesktopFiles.add(data.file.path);
+    }
+    // Force change detection by creating new Set
+    this.selectedDesktopFiles = new Set(this.selectedDesktopFiles);
+  }
+
+  onDesktopFileDragStart(data: { file: FileInfo; event: MouseEvent }): void {
+    // Begin dragging the file icon
+    const startX = data.event.clientX;
+    const startY = data.event.clientY;
+    const origPos = this.desktopFilePositions[data.file.path] || { x: 0, y: 0 };
+    const startPosX = origPos.x;
+    const startPosY = origPos.y;
+
+    const onMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      this.desktopFilePositions[data.file.path] = {
+        x: startPosX + dx,
+        y: startPosY + dy
+      };
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  isDesktopFileSelected(file: FileInfo): boolean {
+    return this.selectedDesktopFiles.has(file.path);
+  }
+
+  getDesktopFilePos(file: FileInfo): { x: number; y: number } {
+    return this.desktopFilePositions[file.path] || { x: 0, y: 0 };
+  }
+
+  // ===== Rubber-band selection =====
+
+  onDesktopMouseDown(event: MouseEvent): void {
+    if (event.button !== 0) return;
+    // Only start rubber-band when clicking on empty desktop
+    const target = event.target as HTMLElement;
+    if (target.closest('.desktop-file-item')) return;
+
+    this.rubberBand.active = true;
+    this.rubberBand.startX = event.clientX;
+    this.rubberBand.startY = event.clientY;
+    this.rubberBand.x = event.clientX;
+    this.rubberBand.y = event.clientY;
+    this.rubberBand.w = 0;
+    this.rubberBand.h = 0;
+
+    if (!(event.ctrlKey || event.metaKey)) {
+      this.selectedDesktopFiles.clear();
+      this.selectedDesktopFiles = new Set(this.selectedDesktopFiles);
+    }
+
+    const onMove = (e: MouseEvent) => {
+      if (!this.rubberBand.active) return;
+      const rx = Math.min(e.clientX, this.rubberBand.startX);
+      const ry = Math.min(e.clientY, this.rubberBand.startY);
+      this.rubberBand.x = rx;
+      this.rubberBand.y = ry;
+      this.rubberBand.w = Math.abs(e.clientX - this.rubberBand.startX);
+      this.rubberBand.h = Math.abs(e.clientY - this.rubberBand.startY);
+    };
+
+    const onUp = () => {
+      if (!this.rubberBand.active) return;
+      this.rubberBand.active = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+
+      if (this.rubberBand.w > 5 || this.rubberBand.h > 5) {
+        const r = {
+          left: this.rubberBand.x,
+          top: this.rubberBand.y,
+          right: this.rubberBand.x + this.rubberBand.w,
+          bottom: this.rubberBand.y + this.rubberBand.h,
+        };
+        const container = document.querySelector('.desktop-content');
+        if (container) {
+          const cr = container.getBoundingClientRect();
+          for (const file of this.filteredDesktopFiles) {
+            const pos = this.desktopFilePositions[file.path] || { x: 0, y: 0 };
+            const fx = cr.left + pos.x;
+            const fy = cr.top + pos.y;
+            if (fx + 88 > r.left && fx < r.right && fy + 80 > r.top && fy < r.bottom) {
+              this.selectedDesktopFiles.add(file.path);
+            }
+          }
+          this.selectedDesktopFiles = new Set(this.selectedDesktopFiles);
+        }
+      }
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
 
   // Wallpaper
   wallpapers = WALLPAPER_PRESETS;
@@ -123,15 +261,31 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.isAuthenticated = this.authService.isAuthenticated();
-    this.desktopApps = [...this.apps];
-    this.dockApps = [...this.apps];
+    // Apps live in App Manager, not on desktop
+    this.desktopApps = [];
+    // Dock shows File Manager + App Manager + Terminal
+    this.dockApps = [
+      this.apps[0], // File Manager
+      this.appManagerEntry, // App Manager
+      this.apps[2], // Terminal
+    ];
 
     this.windowManager.windows$.subscribe(windows => {
       this.openWindows = windows;
+      // Update dock open indicators
+      const openIds = new Set(windows.map(w => w.appId));
+      for (const a of this.dockApps) {
+        a.isOpen = openIds.has(a.id);
+      }
     });
 
     this.loadWallpaper();
     this.initAppearance();
+    this.loadDesktopFiles();
+
+    window.addEventListener('wzos-launch-app', ((e: CustomEvent) => {
+      this.openApp(e.detail);
+    }) as EventListener);
   }
 
   onLoginSuccess(): void {
@@ -143,13 +297,18 @@ export class App implements OnInit {
       'terminal': TerminalComponent,
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
-      'system-settings': SystemSettingsComponent
+      'system-settings': SystemSettingsComponent,
+      'app-manager': AppManagerComponent
     };
 
     const componentType = componentMap[app.id];
     if (componentType) {
       const title = app.id === 'terminal' ? 'zsh' : app.name;
-      this.windowManager.openWindow(app.id, title, componentType);
+      const inputs: Record<string, any> = {};
+      if (app.id === 'app-manager') {
+        inputs['apps'] = this.apps;
+      }
+      this.windowManager.openWindow(app.id, title, componentType, { inputs });
     }
   }
 
@@ -182,6 +341,19 @@ export class App implements OnInit {
     this.nzContextMenuService.close();
     if (action === 'Change Wallpaper') {
       this.openWallpaperPicker();
+    } else if (action === 'Refresh') {
+      this.loadDesktopFiles();
+    } else if (action === 'Toggle Hidden') {
+      this.toggleHiddenDesktopFiles();
+    } else if (action === 'New Folder') {
+      const name = prompt('请输入新文件夹名称:');
+      if (name && name.trim()) {
+        const path = this.desktopPath + '/' + name.trim();
+        this.http.post('/api/files/create', { path, isDir: true }).subscribe({
+          next: () => this.loadDesktopFiles(),
+          error: (err) => alert('创建失败: ' + (err.error?.error || err.message))
+        });
+      }
     }
   }
 
@@ -227,15 +399,20 @@ export class App implements OnInit {
       'terminal': TerminalComponent,
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
-      'system-settings': SystemSettingsComponent
+      'system-settings': SystemSettingsComponent,
+      'app-manager': AppManagerComponent
     };
     const componentType = componentMap[app.id];
     if (!componentType) return;
-    // Always create a new window with a unique ID
+    const inputs: Record<string, any> = {};
+    if (app.id === 'app-manager') {
+      inputs['apps'] = this.apps;
+    }
     this.windowManager.openWindow(
       `${app.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       app.name,
-      componentType
+      componentType,
+      { inputs }
     );
   }
 
@@ -384,6 +561,103 @@ export class App implements OnInit {
       this.applyWallpaper();
       this.applyWallpaperTint();
     }
+  }
+
+  // ===== Desktop Files =====
+
+  loadDesktopFiles(): void {
+    const u = this.authService.username;
+    const candidates: string[] = [];
+    if (u) {
+      candidates.push(`/home/${u}`, `/home/${u}/Desktop`);
+    }
+    candidates.push('/root', '/root/Desktop', '/home', '/');
+
+    const tryNext = (index: number) => {
+      if (index >= candidates.length) {
+        this.desktopFiles = [];
+        return;
+      }
+      const path = candidates[index];
+      this.http.get<any[]>('/api/files/list?path=' + encodeURIComponent(path)).subscribe({
+        next: (data) => {
+          if (data != null && Array.isArray(data)) {
+            this.desktopPath = path;
+            this.desktopFiles = (data as any[])
+              .filter((f: any) => f != null)
+              .sort((a: any, b: any) => {
+                if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                return a.name.localeCompare(b.name);
+              });
+            // Assign default positions for new files
+            let col = 0, row = 0;
+            for (const f of this.desktopFiles) {
+              if (!this.desktopFilePositions[f.path]) {
+                this.desktopFilePositions[f.path] = { x: col * 100 + 20, y: row * 94 + 10 };
+                col++;
+                if (col >= 8) { col = 0; row++; }
+              }
+            }
+          } else {
+            tryNext(index + 1);
+          }
+        },
+        error: () => tryNext(index + 1)
+      });
+    };
+    tryNext(0);
+  }
+
+  openDesktopFile(file: FileInfo): void {
+    if (file.isDir) {
+      // Open directory in file manager
+      this.windowManager.openWindow('file-manager', file.name, FileManagerComponent);
+    } else if (this.isMediaFile(file)) {
+      // Open media in viewer
+      const type = this.getDesktopMediaType(file);
+      const mediaFiles = this.desktopFiles
+        .filter(f => !f.isDir && this.isMediaFile(f))
+        .map(f => ({ name: f.name, path: f.path, type: this.getDesktopMediaType(f)!, fileType: f.name.split('.').pop() }));
+      const idx = mediaFiles.findIndex(f => f.path === file.path);
+      this.windowManager.openWindow(
+        'image-viewer',
+        file.name,
+        MediaViewerComponent,
+        {
+          size: { width: 900, height: 640 },
+          position: { x: 120, y: 80 },
+          inputs: {
+            files: mediaFiles,
+            currentIndex: idx >= 0 ? idx : 0,
+            windowTitle: file.name
+          }
+        }
+      );
+    } else {
+      // Download other file types
+      const link = document.createElement('a');
+      link.href = '/api/files/download?path=' + encodeURIComponent(file.path);
+      link.download = file.name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+  isMediaFile(file: FileInfo): boolean {
+    return this.getDesktopMediaType(file) !== null;
+  }
+
+  getDesktopMediaType(file: FileInfo): 'image' | 'audio' | 'video' | null {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff'];
+    const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'wma', 'm4a', 'opus'];
+    const videoExts = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'm4v'];
+    if (imageExts.includes(ext || '')) return 'image';
+    if (audioExts.includes(ext || '')) return 'audio';
+    if (videoExts.includes(ext || '')) return 'video';
+    return null;
   }
 
   private initAppearance(): void {
