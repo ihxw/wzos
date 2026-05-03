@@ -8,7 +8,8 @@
         (mouseenter)="onMouseEnter(i)"
         (mouseleave)="onMouseLeave()"
         [class.active]="app.isOpen"
-        [style.transform]="'scale(' + getScale(i) + ')'">
+        [style.transform]="'scale(' + getScale(i) + ')'"
+        [style.zIndex]="getZIndex(i)">
         <div class="icon-wrapper">
           <img [src]="app.icon" [alt]="app.name" />
         </div>

@@ -115,6 +115,14 @@ export class WindowManagerService {
       curr.zIndex > (prev?.zIndex ?? 0) ? curr : prev, null as WindowState | null);
   }
 
+  updateWindowTitle(windowId: string, title: string): void {
+    const window = this.windows.find(w => w.id === windowId);
+    if (window) {
+      window.title = title;
+      this.notifyWindowsChanged();
+    }
+  }
+
   setComponentRef(windowId: string, componentRef: ComponentRef<any>): void {
     const window = this.windows.find(w => w.id === windowId);
     if (window) {

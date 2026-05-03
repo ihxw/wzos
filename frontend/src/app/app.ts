@@ -121,7 +121,8 @@ export class App implements OnInit {
 
     const componentType = componentMap[app.id];
     if (componentType) {
-      this.windowManager.openWindow(app.id, app.name, componentType);
+      const title = app.id === 'terminal' ? 'zsh' : app.name;
+      this.windowManager.openWindow(app.id, title, componentType);
     }
   }
 

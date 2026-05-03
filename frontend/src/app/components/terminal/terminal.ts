@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Input, ViewContainerRef } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Terminal } from 'xterm';
@@ -6,6 +6,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import 'xterm/css/xterm.css';
 import { terminalThemes, DEFAULT_THEME, TerminalTheme } from './terminal-themes';
+import { WindowManagerService } from '../../core/services/window-manager.service';
 
 @Component({
   selector: 'app-terminal',
@@ -40,12 +41,38 @@ export class TerminalComponent implements AfterViewInit, OnDestroy {
   showFontPanel = false;
 
   constructor(
-    private viewContainerRef: ViewContainerRef,
-    private nzContextMenuService: NzContextMenuService
+    private nzContextMenuService: NzContextMenuService,
+    private windowManager: WindowManagerService
   ) {}
 
   get themeObj(): TerminalTheme {
     return this.themes[this.currentThemeKey] || this.themes[DEFAULT_THEME];
+  }
+
+  get isDark(): boolean {
+    return this.themeObj.type !== 'light';
+  }
+
+  /** Returns styles for the terminal wrapper that follow the theme */
+  get wrapperStyle(): { background: string } {
+    const background = this.themeObj.colors['background'] || '#1e1e1e';
+    return { background };
+  }
+
+  /** Returns styles for the font panel that follow the theme */
+  get fontPanelStyle(): { background: string; 'border-color': string; color: string } {
+    const background = this.isDark ? '#2d2d2d' : '#f0f0f0';
+    const borderColor = this.isDark ? '#444' : '#d1d1d6';
+    const color = this.isDark ? '#ccc' : '#333';
+    return { background, 'border-color': borderColor, color };
+  }
+
+  /** Returns input/select element styles for the font panel */
+  get inputStyle(): { background: string; 'border-color': string; color: string } {
+    const background = this.isDark ? '#1e1e1e' : '#fff';
+    const borderColor = this.isDark ? '#444' : '#d1d1d6';
+    const color = this.isDark ? '#ccc' : '#333';
+    return { background, 'border-color': borderColor, color };
   }
 
   ngAfterViewInit() {
@@ -119,6 +146,7 @@ export class TerminalComponent implements AfterViewInit, OnDestroy {
       this.status = 'connected';
       this.sendResize();
       this.term.focus();
+      this.windowManager.updateWindowTitle(this.windowId, 'zsh');
     };
 
     this.ws.onclose = () => {

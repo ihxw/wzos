@@ -54,6 +54,7 @@ func HandleTerminalWebsocket(c *gin.Context) {
 	}
 
 	cmd := exec.Command(shell)
+	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	if homeDir, err := os.UserHomeDir(); err == nil {
 		cmd.Dir = homeDir
 	}

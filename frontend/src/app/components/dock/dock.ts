@@ -35,4 +35,13 @@ export class Dock {
     if (distance === 2) return 1.1;
     return 1;
   }
+
+  getZIndex(index: number): number {
+    if (this.hoveredIndex === null) return 1;
+    const distance = Math.abs(index - this.hoveredIndex);
+    if (distance === 0) return 20;
+    if (distance === 1) return 10;
+    if (distance === 2) return 5;
+    return 1;
+  }
 }

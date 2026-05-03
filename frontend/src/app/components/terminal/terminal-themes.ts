@@ -39,8 +39,9 @@ export const terminalThemes: Record<string, TerminalTheme> = {
       background: '#ffffff',
       foreground: '#333333',
       cursor: '#000000',
-      selectionBackground: '#333333',
-      selectionForeground: '#ffffff',
+      selectionBackground: '#e5e5e5',
+      selectionForeground: '#333333',
+      black: '#000000',
       red: '#cd3131',
       green: '#00bc00',
       yellow: '#949800',
@@ -111,7 +112,34 @@ export const terminalThemes: Record<string, TerminalTheme> = {
       brightCyan: '#56d364',
       brightWhite: '#f0f6fc'
     }
+  },
+  macosProDark: {
+    name: 'macOS Pro',
+    type: 'dark',
+    colors: {
+      background: '#1e1e1e',
+      foreground: '#ffffff',
+      cursor: '#ffffff',
+      cursorAccent: '#1e1e1e',
+      selectionBackground: '#505050',
+      black: '#000000',
+      red: '#ff5f56',
+      green: '#28c840',
+      yellow: '#ffbd2e',
+      blue: '#5a9fff',
+      magenta: '#ff6fa8',
+      cyan: '#5ac8fa',
+      white: '#ffffff',
+      brightBlack: '#555555',
+      brightRed: '#ff5f56',
+      brightGreen: '#28c840',
+      brightYellow: '#ffbd2e',
+      brightBlue: '#5a9fff',
+      brightMagenta: '#ff6fa8',
+      brightCyan: '#5ac8fa',
+      brightWhite: '#ffffff'
+    }
   }
 };
 
-export const DEFAULT_THEME = 'vscodeDark';
+export const DEFAULT_THEME = 'macosProDark';

@@ -1,101 +1,258 @@
 <div class="settings-container">
+  <!-- macOS-style sidebar -->
   <div class="settings-sidebar">
-    <ul nz-menu nzMode="inline">
-      <li nz-menu-item [nzSelected]="selectedMenu === 'about'" (click)="selectedMenu = 'about'">
-        <span>
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 8px;">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-          </svg>
-          关于本机
-        </span>
-      </li>
-      <li nz-menu-item [nzSelected]="selectedMenu === 'network'" (click)="selectedMenu = 'network'">
-        <span>
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 8px;">
-            <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-          </svg>
-          网络
-        </span>
-      </li>
-      <li nz-menu-item [nzSelected]="selectedMenu === 'services'" (click)="selectedMenu = 'services'">
-        <span>
-          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="margin-right: 8px;">
-            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-          </svg>
-          服务管理
-        </span>
-      </li>
-    </ul>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M16.5 16.5L21 21"/>
+      </svg>
+      <input type="text" placeholder="搜索" [(ngModel)]="searchText" (ngModelChange)="onSearch()">
+    </div>
+
+    <div class="sidebar-scroll">
+      <div class="menu-section">
+        <div class="section-label">基础设置</div>
+        <a class="menu-item"
+          *ngFor="let item of categories"
+          [class.active]="selectedMenu === item.key"
+          (click)="selectMenu(item.key)">
+          <span class="menu-icon" [style.background]="item.color">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <path [attr.d]="item.icon"/>
+            </svg>
+          </span>
+          <span class="menu-label">{{ item.label }}</span>
+        </a>
+      </div>
+
+      <div class="menu-section">
+        <div class="section-label">系统信息</div>
+        <a class="menu-item"
+          [class.active]="selectedMenu === 'about'"
+          (click)="selectMenu('about')">
+          <span class="menu-icon" style="background:#007aff">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
+          </span>
+          <span class="menu-label">关于本机</span>
+        </a>
+      </div>
+    </div>
   </div>
 
+  <!-- Content -->
   <div class="settings-content">
-    <div *ngIf="selectedMenu === 'about'" class="about-panel">
-      <h2>关于本机</h2>
-      
-      <div class="info-card" *ngIf="systemInfo">
-        <div class="system-logo">
-          <svg viewBox="0 0 100 100" width="80" height="80">
-            <circle cx="50" cy="50" r="45" fill="#667eea"/>
-            <text x="50" y="65" font-size="40" text-anchor="middle" fill="white" font-family="Arial">W</text>
-          </svg>
+    <!-- ===== 通用 ===== -->
+    <div *ngIf="selectedMenu === 'general'" class="settings-pane">
+      <h2>通用</h2>
+      <div class="pane-card">
+        <p class="placeholder-text">通用设置开发中...</p>
+      </div>
+    </div>
+
+    <!-- ===== 网络 ===== -->
+    <div *ngIf="selectedMenu === 'network'" class="settings-pane">
+      <h2>网络</h2>
+      <div class="pane-card">
+        <p class="placeholder-text">网络配置功能开发中...</p>
+      </div>
+    </div>
+
+    <!-- ===== 外观 ===== -->
+    <div *ngIf="selectedMenu === 'appearance'" class="settings-pane">
+      <h2>外观</h2>
+      <div class="pane-card">
+        <p class="placeholder-text">外观设置开发中...</p>
+      </div>
+    </div>
+
+    <!-- ===== 服务管理 ===== -->
+    <div *ngIf="selectedMenu === 'services'" class="settings-pane">
+      <h2>服务管理</h2>
+      <div class="pane-card">
+        <p class="placeholder-text">服务管理功能开发中...</p>
+      </div>
+    </div>
+
+    <!-- ===== 关于本机 (macOS-style 1:1) ===== -->
+    <div *ngIf="selectedMenu === 'about'" class="about-mac-pane">
+      <div class="about-card" *ngIf="systemInfo">
+        <!-- Device Icon Area -->
+        <div class="about-icon-area">
+          <div class="about-device-icon">
+            <svg viewBox="0 0 256 256" width="120" height="120">
+              <defs>
+                <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1a1a2e"/>
+                  <stop offset="100%" stop-color="#16213e"/>
+                </linearGradient>
+                <linearGradient id="baseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c0c0c0"/>
+                  <stop offset="100%" stop-color="#8e8e8e"/>
+                </linearGradient>
+              </defs>
+              <!-- Monitor stand -->
+              <rect x="108" y="190" width="40" height="10" rx="3" fill="url(#baseGrad)"/>
+              <rect x="88" y="198" width="80" height="8" rx="4" fill="#a0a0a0"/>
+              <!-- Monitor body -->
+              <rect x="28" y="20" width="200" height="170" rx="12" fill="#2c2c3a"/>
+              <rect x="36" y="28" width="184" height="150" rx="6" fill="url(#screenGrad)"/>
+              <!-- Screen content - W logo -->
+              <circle cx="128" cy="95" r="45" fill="none" stroke="#667eea" stroke-width="6"/>
+              <text x="128" y="113" font-size="48" text-anchor="middle" fill="#667eea" font-family="system-ui, sans-serif" font-weight="700">W</text>
+            </svg>
+          </div>
         </div>
-        
-        <div class="info-grid">
-          <div class="info-item">
-            <label>系统版本</label>
-            <span>{{ systemInfo.os }}</span>
+
+        <!-- Product Name -->
+        <div class="about-product-name">
+          <span class="about-name">WZOS</span>
+          <span class="about-version-badge">{{ systemInfo.os_version || '1.0' }}</span>
+        </div>
+
+        <!-- Specs List (macOS style) -->
+        <div class="about-specs">
+          <div class="spec-row" *ngIf="systemInfo.cpu_brand">
+            <span class="spec-label">芯片</span>
+            <span class="spec-value">{{ systemInfo.cpu_brand }}</span>
           </div>
-          <div class="info-item">
-            <label>主机名</label>
-            <span>{{ systemInfo.hostname }}</span>
+          <div class="spec-row" *ngIf="systemInfo.memory_total">
+            <span class="spec-label">内存</span>
+            <span class="spec-value">{{ formatBytes(systemInfo.memory_total) }}</span>
           </div>
-          <div class="info-item">
-            <label>运行时间</label>
-            <span>{{ formatUptime(systemInfo.uptime) }}</span>
+          <div class="spec-row" *ngIf="systemInfo.gpu_info">
+            <span class="spec-label">图形卡</span>
+            <span class="spec-value">{{ systemInfo.gpu_info }}</span>
           </div>
-          
-          <div class="info-item full-width">
-            <label>CPU 使用率</label>
-            <nz-progress 
-              [nzPercent]="systemInfo.cpu_usage" 
-              [nzStrokeWidth]="8"
-              [nzStatus]="systemInfo.cpu_usage > 80 ? 'exception' : 'normal'">
-            </nz-progress>
+          <div class="spec-row">
+            <span class="spec-label">序列号</span>
+            <span class="spec-value spec-serial">{{ formatSerial(systemInfo.serial_number) }}</span>
           </div>
-          
-          <div class="info-item full-width">
-            <label>内存使用 ({{ formatBytes(systemInfo.memory_used) }} / {{ formatBytes(systemInfo.memory_total) }})</label>
-            <nz-progress 
-              [nzPercent]="systemInfo.memory_usage" 
-              [nzStrokeWidth]="8"
-              [nzStatus]="systemInfo.memory_usage > 80 ? 'exception' : 'normal'">
-            </nz-progress>
+        </div>
+
+        <!-- Divider -->
+        <div class="about-divider"></div>
+
+        <!-- Detail specs (secondary) -->
+        <div class="about-detail-specs">
+          <div class="detail-row">
+            <span class="spec-label">操作系统</span>
+            <span class="spec-value">{{ systemInfo.os || '—' }}</span>
           </div>
-          
-          <div class="info-item full-width">
-            <label>磁盘使用 ({{ formatBytes(systemInfo.disk_used) }} / {{ formatBytes(systemInfo.disk_total) }})</label>
-            <nz-progress 
-              [nzPercent]="systemInfo.disk_usage" 
-              [nzStrokeWidth]="8"
-              [nzStatus]="systemInfo.disk_usage > 80 ? 'exception' : 'normal'">
-            </nz-progress>
+          <div class="detail-row">
+            <span class="spec-label">内核版本</span>
+            <span class="spec-value">{{ systemInfo.kernel || '—' }}</span>
           </div>
+          <div class="detail-row">
+            <span class="spec-label">主机名</span>
+            <span class="spec-value">{{ systemInfo.hostname || '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="spec-label">运行时间</span>
+            <span class="spec-value">{{ formatUptime(systemInfo.uptime) }}</span>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="about-divider"></div>
+
+        <!-- Action Buttons (macOS style) -->
+        <div class="about-actions">
+          <button class="about-btn" (click)="showSystemReport = !showSystemReport">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            系统报告...
+          </button>
+        </div>
+
+        <!-- System Report Expanded -->
+        <div class="about-system-report" *ngIf="showSystemReport">
+          <div class="report-section">
+            <div class="report-title">硬件概览</div>
+            <table class="report-table">
+              <tr>
+                <td class="rt-label">型号名称</td>
+                <td class="rt-value">{{ systemInfo.machine_model || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">处理器</td>
+                <td class="rt-value">{{ systemInfo.cpu_brand || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">处理器核心数</td>
+                <td class="rt-value">{{ systemInfo.cpu_cores || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">内存</td>
+                <td class="rt-value">{{ formatBytes(systemInfo.memory_total) }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">图形卡</td>
+                <td class="rt-value">{{ systemInfo.gpu_info || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">序列号</td>
+                <td class="rt-value">{{ systemInfo.serial_number || '—' }}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="report-section">
+            <div class="report-title">系统软件概览</div>
+            <table class="report-table">
+              <tr>
+                <td class="rt-label">系统版本</td>
+                <td class="rt-value">{{ systemInfo.os || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">内核版本</td>
+                <td class="rt-value">{{ systemInfo.kernel || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">架构</td>
+                <td class="rt-value">{{ systemInfo.architecture || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">主机名</td>
+                <td class="rt-value">{{ systemInfo.hostname || '—' }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">运行时间</td>
+                <td class="rt-value">{{ formatUptime(systemInfo.uptime) }}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="report-section">
+            <div class="report-title">资源使用</div>
+            <table class="report-table">
+              <tr>
+                <td class="rt-label">CPU 使用率</td>
+                <td class="rt-value">{{ systemInfo.cpu_usage | number:'1.1-1' }}%</td>
+              </tr>
+              <tr>
+                <td class="rt-label">内存已使用</td>
+                <td class="rt-value">{{ formatBytes(systemInfo.memory_used) }} / {{ formatBytes(systemInfo.memory_total) }}</td>
+              </tr>
+              <tr>
+                <td class="rt-label">磁盘已使用</td>
+                <td class="rt-value">{{ formatBytes(systemInfo.disk_used) }} / {{ formatBytes(systemInfo.disk_total) }}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="about-copyright">
+          <span>© 2024 WZOS. 保留所有权利。</span>
         </div>
       </div>
-      
+
+      <!-- Loading -->
       <div class="loading-state" *ngIf="!systemInfo && loading">
-        <p>加载系统信息中...</p>
+        <div class="loading-spinner"></div>
+        <p>正在加载系统信息...</p>
       </div>
-    </div>
-
-    <div *ngIf="selectedMenu === 'network'" class="network-panel">
-      <h2>网络信息</h2>
-      <p class="placeholder-text">网络配置功能开发中...</p>
-    </div>
-
-    <div *ngIf="selectedMenu === 'services'" class="services-panel">
-      <h2>系统服务管理</h2>
-      <p class="placeholder-text">服务管理功能开发中...</p>
     </div>
   </div>
 </div>
