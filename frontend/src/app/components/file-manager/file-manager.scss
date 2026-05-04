@@ -1156,6 +1156,68 @@
 }
 
 // =========================================================================
+//  IMAGE THUMBNAILS
+// =========================================================================
+.icon-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.list-thumb {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.col-thumb {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.preview-thumb {
+  max-width: 160px;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.gallery-preview-thumb {
+  max-width: 400px;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.gallery-strip-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+
+.ql-thumb {
+  max-width: 160px;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.gi-thumb {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+// =========================================================================
 //  SHARED ELEMENTS
 // =========================================================================
 .menu-shortcut {

@@ -8,26 +8,47 @@
   flex-direction: column;
   min-width: 320px;
   min-height: 240px;
-  transition: background 0.2s;
+  transition: background 0.2s, border-radius 0.2s;
+  animation: windowOpen 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 
-  &.minimized {
-    transform: scale(0.8);
-    opacity: 0;
+  &.frame-animating {
+    transition: left 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      top 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      width 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      height 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      border-radius 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      box-shadow 0.26s cubic-bezier(0.2, 0.9, 0.2, 1),
+      background 0.2s;
+  }
+
+  &.closing {
+    animation: windowClose 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     pointer-events: none;
-    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
   &.maximized {
     border-radius: 0;
-    left: 0 !important;
-    top: 0 !important;
+    box-shadow: none;
+  }
+
+  // Focused vs unfocused titlebar
+  &.unfocused .window-titlebar {
+    background: var(--wzos-bg-titlebar-unfocused, var(--wzos-bg-titlebar));
+  }
+
+  &.unfocused .window-title {
+    color: var(--wzos-text-secondary);
+  }
+
+  &.unfocused .window-controls .control-btn {
+    background-color: #d2d2d7;
   }
 
   // ===== Titlebar =====
   .window-titlebar {
     display: flex;
     align-items: center;
-    height: 24px;
+    height: 28px;
     background: var(--wzos-bg-titlebar);
     border-bottom: 1px solid var(--wzos-border-subtle);
     padding: 0 10px;
@@ -38,11 +59,12 @@
 
     .window-controls {
       display: flex;
-      gap: 6px;
+      gap: 7px;
+      margin-right: 4px;
 
       .control-btn {
-        width: 10px;
-        height: 10px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         border: none;
         cursor: pointer;
@@ -50,38 +72,70 @@
         align-items: center;
         justify-content: center;
         padding: 0;
-        opacity: 0.8;
-        transition: opacity 0.15s;
-
-        &:hover { opacity: 1; }
+        position: relative;
+        transition: filter 0.15s;
 
         svg {
-          width: 7px;
-          height: 7px;
+          width: 9px;
+          height: 9px;
           opacity: 0;
           transition: opacity 0.15s;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
         }
 
-        &:hover svg { opacity: 1; }
+        &:hover { filter: brightness(0.92); }
+        &:hover svg { opacity: 0.5; }
 
-        &.close    { background: #ff5f56; }
-        &.minimize { background: #ffbd2e; }
-        &.maximize { background: #27c93f; }
+        &.close {
+          background: #ff5f57;
+          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+        }
+        &.minimize {
+          background: #febc2e;
+          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+        }
+        &.maximize {
+          background: #28c840;
+          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+        }
       }
     }
 
     .window-title {
       flex: 1;
       text-align: center;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--wzos-text-primary);
       font-weight: 500;
-      line-height: 24px;
+      line-height: 28px;
+      transition: color 0.2s;
     }
 
     .window-spacer {
-      width: 48px;
+      width: 52px;
     }
+  }
+
+  // ===== ESC hint =====
+  .esc-hint {
+    position: absolute;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    z-index: 300;
+    pointer-events: none;
+    animation: escHintFade 3s ease forwards;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   // ===== Content area =====
@@ -111,4 +165,21 @@
     &-se { bottom: 0; right: 0;   width: 8px;  height: 8px;  cursor: se-resize; }
     &-sw { bottom: 0; left: 0;    width: 8px;  height: 8px;  cursor: sw-resize; }
   }
+}
+
+// ===== Keyframe animations =====
+
+@keyframes windowOpen {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes windowClose {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.92); }
+}
+
+@keyframes escHintFade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
 }

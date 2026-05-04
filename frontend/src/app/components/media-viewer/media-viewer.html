@@ -48,6 +48,26 @@
     <div class="mv-toolbar-divider"></div>
 
     <div class="mv-toolbar-group">
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="flipX" (click)="flipHorizontal()" nzTooltipTitle="水平翻转">
+        <span class="mv-tool-glyph">H</span>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="flipY" (click)="flipVertical()" nzTooltipTitle="垂直翻转">
+        <span class="mv-tool-glyph">V</span>
+      </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="cropMode || hasCrop" (click)="toggleCropMode()" nzTooltipTitle="裁剪">
+        <span class="mv-tool-glyph">Crop</span>
+      </button>
+      <button nz-button nzType="text" nzSize="small" *ngIf="cropMode" (click)="applyCrop()" nzTooltipTitle="应用裁剪">
+        <span class="mv-tool-glyph">Apply</span>
+      </button>
+      <button nz-button nzType="text" nzSize="small" *ngIf="cropMode" (click)="resetCrop()" nzTooltipTitle="重置裁剪">
+        <span class="mv-tool-glyph">Reset</span>
+      </button>
+    </div>
+
+    <div class="mv-toolbar-divider"></div>
+
+    <div class="mv-toolbar-group">
       <button nz-button nzType="text" nzSize="small"
               [class.mv-active]="showMarkupToolbar"
               (click)="toggleMarkupToolbar()" nzTooltipTitle="显示标记工具栏">
@@ -70,6 +90,9 @@
       </button>
       <button nz-button nzType="text" nzSize="small" (click)="copyImage()" nzTooltipTitle="拷贝 (⌘C)">
         <i nz-icon nzType="copy"></i>
+      </button>
+      <button nz-button nzType="text" nzSize="small" (click)="saveEditedImage()" nzTooltipTitle="按原图分辨率导出 PNG" [class.mv-active]="hasEdits">
+        <i nz-icon nzType="save"></i>
       </button>
       <button nz-button nzType="text" nzSize="small" (click)="openFile()" nzTooltipTitle="打开文件">
         <i nz-icon nzType="folder-open"></i>
@@ -110,6 +133,9 @@
       <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'text'" (click)="selectMarkupTool('text')" nzTooltipTitle="文字">
         <i nz-icon nzType="font-size"></i>
       </button>
+      <button nz-button nzType="text" nzSize="small" [class.mv-active]="markupTool === 'signature'" (click)="selectMarkupTool('signature')" nzTooltipTitle="签名">
+        <span class="mv-tool-glyph">Sig</span>
+      </button>
     </div>
 
     <div class="mv-toolbar-divider"></div>
@@ -127,6 +153,14 @@
       <nz-slider class="mv-line-slider" [nzMin]="1" [nzMax]="20" [nzStep]="1"
                  [(ngModel)]="markupLineWidth" nzTooltipTitle="线宽"></nz-slider>
       <span class="mv-line-label">{{ markupLineWidth }}px</span>
+    </div>
+
+    <div class="mv-toolbar-divider" *ngIf="markupTool === 'text'"></div>
+
+    <div class="mv-toolbar-group" *ngIf="markupTool === 'text'">
+      <nz-slider class="mv-line-slider" [nzMin]="12" [nzMax]="72" [nzStep]="2"
+                 [(ngModel)]="markupFontSize" nzTooltipTitle="字号"></nz-slider>
+      <span class="mv-line-label">{{ markupFontSize }}pt</span>
     </div>
 
     <div class="mv-toolbar-divider"></div>
@@ -179,15 +213,38 @@
              [alt]="currentFile.name"
              [class.fit-to-screen]="fitToScreen"
              [style.transform]="imageTransform"
+             [style.clip-path]="imageClipPath"
              (load)="onImageLoad($event); syncCanvasSize()"
              draggable="false" />
         <canvas #markupCanvas class="mv-markup-canvas"
-                [style.pointer-events]="showMarkupToolbar ? 'auto' : 'none'"
+             [style.pointer-events]="showMarkupToolbar && !cropMode ? 'auto' : 'none'"
+             [style.clip-path]="imageClipPath"
                 (mousedown)="onMarkupMouseDown($event)"
                 (mousemove)="onMarkupMouseMove($event)"
                 (mouseup)="onMarkupMouseUp()"
                 (mouseleave)="onMarkupMouseUp()">
         </canvas>
+
+           <div class="mv-crop-layer"
+             *ngIf="cropMode && displayImageFrame.width > 0 && displayImageFrame.height > 0"
+             [style.left.px]="displayImageFrame.left"
+             [style.top.px]="displayImageFrame.top"
+             [style.width.px]="displayImageFrame.width"
+             [style.height.px]="displayImageFrame.height"
+             (mousedown)="startCropSelection($event)">
+          <div class="mv-crop-box"
+            *ngIf="draftCropRect"
+            [style.left.%]="draftCropRect.x * 100"
+            [style.top.%]="draftCropRect.y * 100"
+            [style.width.%]="draftCropRect.width * 100"
+            [style.height.%]="draftCropRect.height * 100"
+            (mousedown)="startCropMove($event)">
+            <span class="mv-crop-handle mv-crop-handle-nw" (mousedown)="startCropResize($event, 'resize-nw')"></span>
+            <span class="mv-crop-handle mv-crop-handle-ne" (mousedown)="startCropResize($event, 'resize-ne')"></span>
+            <span class="mv-crop-handle mv-crop-handle-se" (mousedown)="startCropResize($event, 'resize-se')"></span>
+            <span class="mv-crop-handle mv-crop-handle-sw" (mousedown)="startCropResize($event, 'resize-sw')"></span>
+          </div>
+           </div>
       </div>
 
       <div class="mv-audio-container" *ngIf="isAudio && currentFile">
@@ -229,6 +286,26 @@
     <i nz-icon nzType="play-circle"></i>
     <span>幻灯片 — {{ slideshowInterval }}s</span>
     <button nz-button nzType="text" nzSize="small" (click)="stopSlideshow()">停止</button>
+  </div>
+
+  <div class="mv-signature-overlay" *ngIf="signatureModalVisible" (click)="closeSignatureModal()">
+    <div class="mv-signature-dialog" (click)="$event.stopPropagation()">
+      <div class="mv-signature-header">
+        <span>签名</span>
+        <button class="mv-signature-close" (click)="closeSignatureModal()">&times;</button>
+      </div>
+      <div class="mv-signature-body">
+        <canvas #signatureCanvas class="mv-signature-canvas"
+                (mousedown)="onSignatureMouseDown($event)"
+                (mousemove)="onSignatureMouseMove($event)"
+                (mouseup)="onSignatureMouseUp()"
+                (mouseleave)="onSignatureMouseUp()"></canvas>
+      </div>
+      <div class="mv-signature-footer">
+        <button class="mv-open-btn" (click)="clearSignaturePad()">清除</button>
+        <button class="mv-open-btn mv-open-btn-primary" [class.disabled]="!signatureDirty" (click)="saveSignature()">保存签名</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== Prev/Next Navigation ===== -->

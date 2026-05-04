@@ -1,20 +1,42 @@
-<div class="dock-container">
+<div class="dock-container" [style.--dock-icon-size.px]="iconSize">
   <div class="dock-glass">
-    <div class="dock-items">
-      <div 
-        class="dock-item" 
-        *ngFor="let app of apps; let i = index" 
-        (click)="open(app)"
-        (mouseenter)="onMouseEnter(i)"
-        (mouseleave)="onMouseLeave()"
-        [class.active]="app.isOpen"
-        [style.transform]="'scale(' + getScale(i) + ')'"
-        [style.zIndex]="getZIndex(i)">
-        <div class="icon-wrapper">
-          <img [src]="app.icon" [alt]="app.name" />
+    <div class="dock-items" (mousemove)="onDockMouseMove($event)" (mouseleave)="onDockMouseLeave()">
+      <ng-container *ngFor="let app of apps; let i = index">
+        <div class="dock-separator" *ngIf="shouldRenderSeparator(i)"></div>
+        <div class="dock-item-wrapper" [attr.data-app-id]="app.id" #dockItemWrapper>
+          <div
+            class="dock-item"
+            (click)="open(app)"
+            (mouseenter)="onMouseEnter(i)"
+            [class.active]="app.isOpen"
+            [class.bouncing]="bounceIndex === i"
+            [class.hovering]="hoveredIndex === i"
+            [style.--dock-scale]="getScale(i)"
+            [style.--dock-lift.px]="getLift(i)">
+            <div class="icon-wrapper">
+              <img [src]="app.icon" [alt]="app.name" />
+            </div>
+            <div class="dot" *ngIf="app.isOpen"></div>
+          </div>
+          <div
+            class="dock-tooltip"
+            *ngIf="hoveredIndex === i">
+            {{ app.name }}
+          </div>
         </div>
-        <div class="dot" *ngIf="app.isOpen"></div>
-        <div class="tooltip">{{ app.name }}</div>
+      </ng-container>
+
+      <div class="dock-separator dock-separator-utility"></div>
+
+      <div class="dock-size-control">
+        <button class="dock-size-toggle" type="button" (click)="toggleSizeControl()" [class.active]="showSizeControl" title="调整程序坞图标大小">
+          <span class="dock-size-glyph"></span>
+        </button>
+
+        <div class="dock-size-popover" *ngIf="showSizeControl" (click)="$event.stopPropagation()">
+          <span class="dock-size-label">图标大小</span>
+          <input type="range" min="40" max="72" step="2" [value]="iconSize" (input)="onSizeSliderInput($event)" />
+        </div>
       </div>
     </div>
   </div>

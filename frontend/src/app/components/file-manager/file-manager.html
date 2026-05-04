@@ -270,7 +270,11 @@
              (contextmenu)="contextMenu($event, fileMenu, file)"
              cdkDrag [cdkDragData]="file">
           <div class="icon-wrapper">
-            <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+            @if (isImageFile(file)) {
+              <img class="icon-thumb" [src]="getImageUrl(file)" alt="" loading="lazy" />
+            } @else {
+              <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+            }
           </div>
           <div class="icon-name" *ngIf="renamingPath !== file.path" [title]="file.name">{{ file.name }}</div>
           <input *ngIf="renamingPath === file.path"
@@ -309,7 +313,11 @@
                 cdkDrag [cdkDragData]="file">
               <td class="name-cell">
                 <div class="name-content">
-                  <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+                  @if (isImageFile(file)) {
+                    <img class="list-thumb" [src]="getImageUrl(file)" alt="" loading="lazy" />
+                  } @else {
+                    <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+                  }
                   <span *ngIf="renamingPath !== file.path">{{ file.name }}</span>
                   <input *ngIf="renamingPath === file.path"
                          nz-input class="rename-input-inline"
@@ -344,7 +352,11 @@
                (contextmenu)="contextMenu($event, fileMenu, file)"
                cdkDrag [cdkDragData]="file">
             <div class="item-left">
-              <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+              @if (isImageFile(file)) {
+                <img class="col-thumb" [src]="getImageUrl(file)" alt="" loading="lazy" />
+              } @else {
+                <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+              }
               <span *ngIf="renamingPath !== file.path">{{ file.name }}</span>
               <input *ngIf="renamingPath === file.path"
                      nz-input class="rename-input-col"
@@ -363,7 +375,11 @@
         <div class="column-panel preview-panel" *ngIf="selectedFile && !selectedFile.isDir">
           <div class="preview-content">
             <div class="preview-icon">
-              <i nz-icon [nzType]="getFileIcon(selectedFile)" [nzTheme]="getIconTheme(selectedFile)" [nzTwotoneColor]="getFileIconColor(selectedFile)"></i>
+              @if (isImageFile(selectedFile)) {
+                <img class="preview-thumb" [src]="getImageUrl(selectedFile)" alt="" loading="lazy" />
+              } @else {
+                <i nz-icon [nzType]="getFileIcon(selectedFile)" [nzTheme]="getIconTheme(selectedFile)" [nzTwotoneColor]="getFileIconColor(selectedFile)"></i>
+              }
             </div>
             <h2 class="preview-title">{{ selectedFile.name }}</h2>
             <div class="preview-type">{{ getFileType(selectedFile) }} - {{ formatBytes(selectedFile.size) }}</div>
@@ -383,7 +399,11 @@
       <div *ngIf="viewMode === 'gallery'" class="gallery-view">
         <div class="gallery-main" *ngIf="galleryFile">
           <div class="gallery-preview">
-            <i nz-icon [nzType]="getFileIcon(galleryFile)" [nzTheme]="getIconTheme(galleryFile)" [nzTwotoneColor]="getFileIconColor(galleryFile)" style="font-size:160px"></i>
+            @if (isImageFile(galleryFile)) {
+              <img class="gallery-preview-thumb" [src]="getImageUrl(galleryFile)" alt="" />
+            } @else {
+              <i nz-icon [nzType]="getFileIcon(galleryFile)" [nzTheme]="getIconTheme(galleryFile)" [nzTwotoneColor]="getFileIconColor(galleryFile)" style="font-size:160px"></i>
+            }
           </div>
           <div class="gallery-info">
             <h2>{{ galleryFile.name }}</h2>
@@ -400,7 +420,11 @@
                [class.active]="file === galleryFile"
                (click)="galleryFile = file"
                (dblclick)="open(file)">
-            <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+            @if (isImageFile(file)) {
+              <img class="gallery-strip-thumb" [src]="getImageUrl(file)" alt="" loading="lazy" />
+            } @else {
+              <i nz-icon [nzType]="getFileIcon(file)" [nzTheme]="getIconTheme(file)" [nzTwotoneColor]="getFileIconColor(file)"></i>
+            }
             <span>{{ file.name }}</span>
           </div>
         </div>
@@ -461,7 +485,11 @@
         </div>
         <div class="ql-body">
           <div class="ql-icon">
-            <i nz-icon [nzType]="getFileIcon(quickLookFile)" [nzTheme]="getIconTheme(quickLookFile)" [nzTwotoneColor]="getFileIconColor(quickLookFile)"></i>
+            @if (isImageFile(quickLookFile)) {
+              <img class="ql-thumb" [src]="getImageUrl(quickLookFile)" alt="" />
+            } @else {
+              <i nz-icon [nzType]="getFileIcon(quickLookFile)" [nzTheme]="getIconTheme(quickLookFile)" [nzTwotoneColor]="getFileIconColor(quickLookFile)"></i>
+            }
           </div>
           <div class="ql-info">
             <h3>{{ quickLookFile.name }}</h3>
@@ -494,7 +522,11 @@
         </div>
         <div class="gi-body">
           <div class="gi-icon-row">
-            <i nz-icon [nzType]="getFileIcon(getInfoFile)" [nzTheme]="getIconTheme(getInfoFile)" [nzTwotoneColor]="getFileIconColor(getInfoFile)" style="font-size:64px"></i>
+            @if (isImageFile(getInfoFile)) {
+              <img class="gi-thumb" [src]="getImageUrl(getInfoFile)" alt="" />
+            } @else {
+              <i nz-icon [nzType]="getFileIcon(getInfoFile)" [nzTheme]="getIconTheme(getInfoFile)" [nzTwotoneColor]="getFileIconColor(getInfoFile)" style="font-size:64px"></i>
+            }
           </div>
           <h3 class="gi-name">{{ getInfoFile.name }}</h3>
           <div class="gi-sections">

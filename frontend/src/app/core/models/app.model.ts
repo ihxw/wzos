@@ -4,4 +4,6 @@ export interface DesktopApp {
   icon: string; // URL or class name for icon
   component?: string; // Reference to the component to render inside WinBox
   isOpen?: boolean;
+  isMinimized?: boolean;
+  isPinned?: boolean;
 }

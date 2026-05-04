@@ -11,6 +11,7 @@
   // Surfaces
   --wzos-bg-window: #ffffff;
   --wzos-bg-titlebar: #f5f5f7;
+  --wzos-bg-titlebar-unfocused: #ececee;
   --wzos-bg-sidebar: #f2f2f2;
   --wzos-bg-content: #ffffff;
   --wzos-bg-card: #f5f5f7;
@@ -40,7 +41,11 @@
   --wzos-window-tint: transparent;
 
   // Shadows
-  --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --wzos-shadow-window:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.06),
+    0 24px 60px rgba(0, 0, 0, 0.05);
   --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.12);
   --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
@@ -49,6 +54,7 @@
 .wzos-dark {
   --wzos-bg-window: #2c2c2e;
   --wzos-bg-titlebar: #38383a;
+  --wzos-bg-titlebar-unfocused: #2e2e30;
   --wzos-bg-sidebar: #2a2a2c;
   --wzos-bg-content: #1e1e20;
   --wzos-bg-card: #2c2c2e;
@@ -68,7 +74,11 @@
   --wzos-text-placeholder: #6e6e73;
 
   --wzos-scrollbar-thumb: #545456;
-  --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --wzos-shadow-window:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(0, 0, 0, 0.18),
+    0 24px 60px rgba(0, 0, 0, 0.15);
   --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.35);
   --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.3);
 
@@ -83,6 +93,7 @@
   html:not(.wzos-light):not(.wzos-dark) {
     --wzos-bg-window: #2c2c2e;
     --wzos-bg-titlebar: #38383a;
+    --wzos-bg-titlebar-unfocused: #2e2e30;
     --wzos-bg-sidebar: #2a2a2c;
     --wzos-bg-content: #1e1e20;
     --wzos-bg-card: #2c2c2e;
@@ -102,7 +113,11 @@
     --wzos-text-placeholder: #6e6e73;
 
     --wzos-scrollbar-thumb: #545456;
-    --wzos-shadow-window: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --wzos-shadow-window:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(0, 0, 0, 0.18),
+    0 24px 60px rgba(0, 0, 0, 0.15);
     --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.35);
     --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.3);
   }

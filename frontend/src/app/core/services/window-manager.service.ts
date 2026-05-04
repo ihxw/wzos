@@ -10,6 +10,8 @@ export interface WindowState {
   isMaximized: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
+  savedPosition?: { x: number; y: number };
+  savedSize?: { width: number; height: number };
   componentRef?: ComponentRef<any>;
   componentType?: Type<any>;
   inputs?: Record<string, any>;
@@ -33,9 +35,13 @@ export class WindowManagerService {
     // For image-viewer, always open a new window
     const reuseWindow = appId !== 'image-viewer';
     if (reuseWindow) {
-      const existingWindow = this.windows.find(w => w.appId === appId && !w.isMinimized);
+      const existingWindow = this.windows.find(w => w.appId === appId);
       if (existingWindow) {
-        this.focusWindow(existingWindow.id);
+        if (existingWindow.isMinimized) {
+          this.restoreWindow(existingWindow.id);
+        } else {
+          this.focusWindow(existingWindow.id);
+        }
         return existingWindow.id;
       }
     }
@@ -67,6 +73,7 @@ export class WindowManagerService {
         window.componentRef.destroy();
       }
       this.windows.splice(index, 1);
+      this.normalizeZIndexes();
       this.notifyWindowsChanged();
     }
   }
@@ -81,10 +88,26 @@ export class WindowManagerService {
 
   maximizeWindow(windowId: string): void {
     const window = this.windows.find(w => w.id === windowId);
-    if (window) {
-      window.isMaximized = !window.isMaximized;
-      this.notifyWindowsChanged();
+    if (!window) return;
+
+    if (window.isMaximized) {
+      // Restore
+      window.isMaximized = false;
+      if (window.savedPosition) {
+        window.position = { ...window.savedPosition };
+        window.savedPosition = undefined;
+      }
+      if (window.savedSize) {
+        window.size = { ...window.savedSize };
+        window.savedSize = undefined;
+      }
+    } else {
+      // Save current state before maximizing
+      window.savedPosition = { ...window.position };
+      window.savedSize = { ...window.size };
+      window.isMaximized = true;
     }
+    this.notifyWindowsChanged();
   }
 
   restoreWindow(windowId: string): void {
@@ -99,6 +122,10 @@ export class WindowManagerService {
     const window = this.windows.find(w => w.id === windowId);
     if (window) {
       window.zIndex = ++this.highestZIndex;
+      // Normalize if zIndexes grow too large (prevent overflow)
+      if (this.highestZIndex > 10000) {
+        this.normalizeZIndexes();
+      }
       this.notifyWindowsChanged();
     }
   }
@@ -132,6 +159,15 @@ export class WindowManagerService {
 
   getWindows(): WindowState[] {
     return this.windows;
+  }
+
+  /** Normalize zIndexes to prevent unbounded growth */
+  private normalizeZIndexes(): void {
+    const sorted = [...this.windows].sort((a, b) => a.zIndex - b.zIndex);
+    this.highestZIndex = 100;
+    for (const w of sorted) {
+      w.zIndex = ++this.highestZIndex;
+    }
   }
 
   private notifyWindowsChanged(): void {

@@ -13,7 +13,13 @@ import { FileInfo } from '../../core/services/file.service';
          [style.top.px]="position.y"
          (mousedown)="onMouseDown($event)"
          (dblclick)="onOpenFile.emit(file)">
-      <div class="df-icon">{{ icon }}</div>
+      @if (isImage) {
+        <div class="df-icon df-icon-img">
+          <img [src]="imageUrl" alt="" loading="lazy" />
+        </div>
+      } @else {
+        <div class="df-icon">{{ icon }}</div>
+      }
       <span class="df-name">{{ file.name }}</span>
     </div>
   `,
@@ -51,6 +57,19 @@ import { FileInfo } from '../../core/services/file.service';
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
       pointer-events: none;
     }
+    .df-icon-img {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .df-icon-img img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+    }
     .df-name {
       font-size: 12px;
       color: #fff;
@@ -77,6 +96,18 @@ export class DesktopFileComponent {
   private hasMoved = false;
 
   constructor(private el: ElementRef) {}
+
+  private static readonly IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']);
+
+  get isImage(): boolean {
+    if (!this.file || this.file.isDir) return false;
+    const ext = this.file.name.split('.').pop()?.toLowerCase();
+    return ext != null && DesktopFileComponent.IMAGE_EXTS.has(ext);
+  }
+
+  get imageUrl(): string {
+    return '/api/files/view?path=' + encodeURIComponent(this.file.path);
+  }
 
   get icon(): string {
     if (!this.file) return '📄';

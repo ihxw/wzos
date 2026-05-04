@@ -9,7 +9,8 @@
       "Bash(./backend)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
       "Bash(xxd)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(find /home/yu/code/github/wzos/frontend/src/app/app.*.ts -o -name \"app.ts\")"
     ],
     "additionalDirectories": [
       "/tmp"

@@ -90,6 +90,7 @@ const WALLPAPER_PRESETS: WallpaperPreset[] = [
 })
 export class App implements OnInit {
   isAuthenticated = false;
+  private readonly dockSizeStorageKey = 'wzos-dock-icon-size';
 
   apps: DesktopApp[] = [
     { id: 'file-manager', name: 'Files', icon: '/icon_files.png' },
@@ -103,6 +104,9 @@ export class App implements OnInit {
 
   desktopApps: DesktopApp[] = [];
   dockApps: DesktopApp[] = [];
+  pinnedDockApps: DesktopApp[] = [];
+  dynamicDockApps: DesktopApp[] = [];
+  dockIconSize = 52;
   openWindows: WindowState[] = [];
 
   // Desktop files (from ~/Desktop folder)
@@ -146,17 +150,30 @@ export class App implements OnInit {
     // Begin dragging the file icon
     const startX = data.event.clientX;
     const startY = data.event.clientY;
-    const origPos = this.desktopFilePositions[data.file.path] || { x: 0, y: 0 };
-    const startPosX = origPos.x;
-    const startPosY = origPos.y;
+
+    // If the dragged file is not in the selection, select only it
+    if (!this.selectedDesktopFiles.has(data.file.path)) {
+      this.selectedDesktopFiles = new Set([data.file.path]);
+    }
+
+    // Snapshot selected paths and their original positions
+    const draggedPaths = Array.from(this.selectedDesktopFiles);
+    const startPositions: Record<string, { x: number; y: number }> = {};
+    for (const path of draggedPaths) {
+      const pos = this.desktopFilePositions[path] || { x: 0, y: 0 };
+      startPositions[path] = { x: pos.x, y: pos.y };
+    }
 
     const onMove = (e: MouseEvent) => {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      this.desktopFilePositions[data.file.path] = {
-        x: startPosX + dx,
-        y: startPosY + dy
-      };
+      for (const path of draggedPaths) {
+        const start = startPositions[path];
+        this.desktopFilePositions[path] = {
+          x: start.x + dx,
+          y: start.y + dy
+        };
+      }
     };
 
     const onUp = () => {
@@ -261,10 +278,11 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.isAuthenticated = this.authService.isAuthenticated();
+    this.dockIconSize = this.loadDockIconSize();
     // Apps live in App Manager, not on desktop
     this.desktopApps = [];
-    // Dock shows File Manager + App Manager + Terminal
-    this.dockApps = [
+    // Dock shows pinned apps + dynamically opened apps
+    this.pinnedDockApps = [
       this.apps[0], // File Manager
       this.appManagerEntry, // App Manager
       this.apps[2], // Terminal
@@ -272,10 +290,27 @@ export class App implements OnInit {
 
     this.windowManager.windows$.subscribe(windows => {
       this.openWindows = windows;
-      // Update dock open indicators
-      const openIds = new Set(windows.map(w => w.appId));
+
+      // Build dock: pinned apps + any opened apps not in pinned list
+      const pinnedIds = new Set(this.pinnedDockApps.map(a => a.id));
+      const dynamicApps: DesktopApp[] = [];
+      const seenIds = new Set<string>();
+      for (const w of windows) {
+        if (!pinnedIds.has(w.appId) && !seenIds.has(w.appId)) {
+          seenIds.add(w.appId);
+          const appDef = this.apps.find(a => a.id === w.appId);
+          if (appDef) dynamicApps.push({ ...appDef, isPinned: false });
+        }
+      }
+      this.dynamicDockApps = dynamicApps;
+      this.dockApps = [...this.pinnedDockApps, ...this.dynamicDockApps];
+
+      // Update open indicators and minimized state
       for (const a of this.dockApps) {
-        a.isOpen = openIds.has(a.id);
+        const win = windows.find(w => w.appId === a.id);
+        a.isOpen = !!win;
+        a.isMinimized = win?.isMinimized ?? false;
+        a.isPinned = pinnedIds.has(a.id);
       }
     });
 
@@ -332,6 +367,11 @@ export class App implements OnInit {
     this.windowManager.restoreWindow(windowId);
   }
 
+  updateDockIconSize(nextSize: number): void {
+    this.dockIconSize = nextSize;
+    localStorage.setItem(this.dockSizeStorageKey, String(nextSize));
+  }
+
   contextMenu($event: MouseEvent, menu: NzDropdownMenuComponent): void {
     $event.preventDefault();
     this.nzContextMenuService.create($event, menu);
@@ -355,6 +395,14 @@ export class App implements OnInit {
         });
       }
     }
+  }
+
+  private loadDockIconSize(): number {
+    const stored = Number(localStorage.getItem(this.dockSizeStorageKey));
+    if (Number.isFinite(stored) && stored >= 40 && stored <= 72) {
+      return stored;
+    }
+    return 52;
   }
 
   // ===== App icon context menus =====
@@ -569,9 +617,9 @@ export class App implements OnInit {
     const u = this.authService.username;
     const candidates: string[] = [];
     if (u) {
-      candidates.push(`/home/${u}`, `/home/${u}/Desktop`);
+      candidates.push(`/home/${u}/Desktop`, `/home/${u}/桌面`, `/home/${u}`);
     }
-    candidates.push('/root', '/root/Desktop', '/home', '/');
+    candidates.push('/root/Desktop', '/root/桌面', '/root', '/home', '/');
 
     const tryNext = (index: number) => {
       if (index >= candidates.length) {

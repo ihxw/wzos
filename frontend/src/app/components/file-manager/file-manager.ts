@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -41,6 +41,7 @@ const TAG_COLORS: Record<string, string> = {
   styleUrls: ['./file-manager.scss']
 })
 export class FileManagerComponent implements OnInit, OnDestroy {
+  @Input() windowId = '';
   currentPath = '';
   files: FileInfo[] = [];
   selectedFiles: Set<string> = new Set();
@@ -1281,6 +1282,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       error: () => {}
     });
     this.subs.push(sub);
+  }
+
+  // ===== Image Preview =====
+  private static readonly IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff']);
+
+  isImageFile(file: FileInfo): boolean {
+    if (!file || file.isDir) return false;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    return ext != null && FileManagerComponent.IMAGE_EXTS.has(ext);
+  }
+
+  getImageUrl(file: FileInfo): string {
+    return '/api/files/view?path=' + encodeURIComponent(file.path);
   }
 
   // ===== Icon & Type Helpers =====

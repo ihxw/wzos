@@ -25,7 +25,10 @@
   </div>
 
   <app-dock
-    [apps]="dockApps"
+    [pinnedApps]="pinnedDockApps"
+    [dynamicApps]="dynamicDockApps"
+    [iconSize]="dockIconSize"
+    (iconSizeChange)="updateDockIconSize($event)"
     (onOpen)="openApp($event)">
   </app-dock>
 

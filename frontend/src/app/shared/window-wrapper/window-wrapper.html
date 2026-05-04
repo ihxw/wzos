@@ -1,16 +1,20 @@
 <div
   class="macos-window"
-  [style.zIndex]="windowState.zIndex"
-  [style.left.px]="windowState.position.x"
-  [style.top.px]="windowState.position.y"
-  [style.width.px]="windowState.isMaximized ? null : windowState.size.width"
-  [style.height.px]="windowState.isMaximized ? null : windowState.size.height"
-  [class.minimized]="windowState.isMinimized"
   [class.maximized]="windowState.isMaximized"
+  [class.unfocused]="!isFocused && !windowState.isMinimized"
+  [class.closing]="isClosing"
+  [class.frame-animating]="isFrameAnimating"
+  [style.zIndex]="windowState.zIndex"
+  [style.left.px]="frameLeft"
+  [style.top.px]="frameTop"
+  [style.width.px]="frameWidth"
+  [style.height.px]="frameHeight"
   (mousedown)="onFocus()"
   #windowEl>
 
-  <div class="window-titlebar" (mousedown)="onDragStart($event)">
+  <div class="window-titlebar"
+       (mousedown)="onDragStart($event)"
+       (dblclick)="onMaximize()">
     <div class="window-controls">
       <button class="control-btn close" (click)="onClose()" title="关闭">
         <svg viewBox="0 0 12 12">
@@ -30,6 +34,10 @@
     </div>
     <div class="window-title">{{ windowState.title }}</div>
     <div class="window-spacer"></div>
+  </div>
+
+  <div class="esc-hint" *ngIf="showEscHint && windowState.isMaximized">
+    按 ESC 退出全屏
   </div>
 
   <div class="window-content">
