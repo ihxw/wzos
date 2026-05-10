@@ -93,6 +93,7 @@ export class App implements OnInit {
   showQuickLook = false;
   quickLookFile: FileInfo | null = null;
   pendingSelectDesktopPath: string | null = null;
+  desktopRenamingPath: string | null = null;
   private readonly dockSizeStorageKey = 'wzos-dock-icon-size';
 
   apps: DesktopApp[] = [
@@ -680,8 +681,11 @@ export class App implements OnInit {
             if (this.pendingSelectDesktopPath) {
               const p = this.pendingSelectDesktopPath;
               this.pendingSelectDesktopPath = null;
-              this.clearDesktopSelection();
+              this.selectedDesktopFiles.clear();
               this.selectedDesktopFiles.add(p);
+              setTimeout(() => {
+                this.desktopRenamingPath = p;
+              }, 50);
             }
           } else {
             tryNext(index + 1);
@@ -743,6 +747,29 @@ export class App implements OnInit {
     if (audioExts.includes(ext || '')) return 'audio';
     if (videoExts.includes(ext || '')) return 'video';
     return null;
+  }
+
+  cancelDesktopRename(): void {
+    this.desktopRenamingPath = null;
+  }
+
+  confirmDesktopRename(file: FileInfo, newName: string): void {
+    if (this.desktopRenamingPath !== file.path) return;
+    this.desktopRenamingPath = null;
+    const cleanName = newName.trim();
+    if (!cleanName || cleanName === file.name) return;
+    if (cleanName.includes('/')) {
+      alert('文件名不能包含 /');
+      return;
+    }
+    const parentDir = file.path.substring(0, file.path.lastIndexOf('/'));
+    const newPath = parentDir + '/' + cleanName;
+    this.http.post('/api/files/rename', { oldPath: file.path, newPath }).subscribe({
+      next: () => {
+        this.loadDesktopFiles();
+      },
+      error: (err) => alert('重命名失败: ' + (err.error?.error || err.message))
+    });
   }
 
   private initAppearance(): void {

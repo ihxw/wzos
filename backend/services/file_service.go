@@ -152,6 +152,12 @@ func RenameFile(oldPath, newPath string) error {
 	if !isPathSafe(oldPath) || !isPathSafe(newPath) {
 		return fmt.Errorf("unsafe path")
 	}
+
+	// Check if target already exists
+	if _, err := os.Stat(newPath); err == nil {
+		return fmt.Errorf("目标名称已存在")
+	}
+
 	// Ensure parent directory exists
 	parentDir := filepath.Dir(newPath)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {

@@ -9,10 +9,13 @@
       *ngFor="let file of filteredDesktopFiles"
       [file]="file"
       [selected]="isDesktopFileSelected(file)"
+      [renaming]="desktopRenamingPath === file.path"
       [position]="getDesktopFilePos(file)"
       (onOpenFile)="openDesktopFile($event)"
       (onSelect)="onDesktopFileSelect($event)"
-      (onDragStart)="onDesktopFileDragStart($event)">
+      (onDragStart)="onDesktopFileDragStart($event)"
+      (onRenameConfirm)="confirmDesktopRename(file, $event)"
+      (onRenameCancel)="cancelDesktopRename()">
     </app-desktop-file>
 
     <!-- Rubber-band selection overlay -->

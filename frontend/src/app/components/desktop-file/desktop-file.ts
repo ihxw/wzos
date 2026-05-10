@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FileInfo } from '../../core/services/file.service';
 
@@ -20,7 +20,15 @@ import { FileInfo } from '../../core/services/file.service';
       } @else {
         <div class="df-icon">{{ icon }}</div>
       }
-      <span class="df-name">{{ file.name }}</span>
+      <span class="df-name" *ngIf="!renaming">{{ file.name }}</span>
+      <input *ngIf="renaming"
+             #renameInput
+             class="df-rename-input"
+             [value]="file.name"
+             (click)="$event.stopPropagation()"
+             (mousedown)="$event.stopPropagation()"
+             (keydown)="handleRenameKeydown($event)"
+             (blur)="commitRename(renameInput.value)" />
     </div>
   `,
   styles: [`
@@ -82,15 +90,47 @@ import { FileInfo } from '../../core/services/file.service';
       word-break: break-word;
       pointer-events: none;
     }
+    .df-rename-input {
+      font-size: 12px;
+      width: 110%;
+      text-align: center;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid #007aff;
+      outline: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #000;
+      margin-top: 2px;
+      pointer-events: auto;
+    }
   `]
 })
 export class DesktopFileComponent {
   @Input() file!: FileInfo;
   @Input() selected = false;
+  @Input() renaming = false;
   @Input() position = { x: 0, y: 0 };
   @Output() onOpenFile = new EventEmitter<FileInfo>();
   @Output() onSelect = new EventEmitter<{ file: FileInfo; event: MouseEvent }>();
   @Output() onDragStart = new EventEmitter<{ file: FileInfo; event: MouseEvent }>();
+  @Output() onRenameConfirm = new EventEmitter<string>();
+  @Output() onRenameCancel = new EventEmitter<void>();
+
+  @ViewChild('renameInput') set renameInputEl(el: ElementRef<HTMLInputElement>) {
+    if (el && this.renaming) {
+      setTimeout(() => {
+        el.nativeElement.focus();
+        if (!this.file.isDir) {
+           const dotIndex = this.file.name.lastIndexOf('.');
+           if (dotIndex > 0) {
+             el.nativeElement.setSelectionRange(0, dotIndex);
+             return;
+           }
+        }
+        el.nativeElement.select();
+      }, 0);
+    }
+  }
 
   private dragging = false;
   private hasMoved = false;
@@ -173,5 +213,19 @@ export class DesktopFileComponent {
     document.addEventListener('mouseup', onMouseUp);
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  handleRenameKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.commitRename((event.target as HTMLInputElement).value);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.onRenameCancel.emit();
+    }
+  }
+
+  commitRename(newName: string) {
+    this.onRenameConfirm.emit(newName);
   }
 }
