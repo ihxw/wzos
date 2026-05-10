@@ -19,7 +19,7 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 interface DockMorphGeometry {
   deltaX: number;
   deltaY: number;
-  centerRatio: number;
+  targetScale: number;
 }
 
 /** Get center of dock icon for given app ID */
@@ -151,49 +151,66 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
     const el = this.windowEl.nativeElement;
     if (!el) return;
 
-    const runAnimation = () => {
-      const rect = el.getBoundingClientRect();
-      const geometry = this.getDockMorphGeometry(rect);
-      this.isAnimating = true;
+    this.isAnimating = true;
 
-      const start = performance.now();
-      const duration = isMinimizing ? 560 : 520;
+    const left = this.frameLeft;
+    const top = this.frameTop;
+    const width = this.frameWidth;
+    const height = this.frameHeight;
 
-      const frame = (now: number) => {
-        const t = Math.min((now - start) / duration, 1);
-        const eased = isMinimizing ? easeOutCubic(t) : spring(t);
-        const morph = isMinimizing ? eased : Math.max(0, 1 - eased);
+    const dock = getDockCenter(this.windowState.appId);
+    const dockX = dock ? dock.x : window.innerWidth / 2;
+    const dockY = dock ? dock.y : window.innerHeight;
 
-        this.applyDockMorphFrame(el, geometry, morph);
+    // Use center bottom as the transform origin for the "suck in" effect
+    const originX = left + width / 2;
+    const originY = top + height;
 
-        if (t < 1) {
-          requestAnimationFrame(frame);
-          return;
-        }
+    const targetScale = 40 / Math.max(width, height, 1);
 
-        this.resetDockMorphStyles(el);
-        if (isMinimizing) {
-          this.minimize.emit(this.windowState.id);
-          requestAnimationFrame(() => {
-            this.isAnimating = false;
-          });
-          return;
-        }
-
-        this.isAnimating = false;
-      };
-
-      requestAnimationFrame(frame);
+    const geometry: DockMorphGeometry = {
+      deltaX: dockX - originX,
+      deltaY: dockY - originY,
+      targetScale
     };
 
-    if (isMinimizing) {
-      runAnimation();
-      return;
+    if (!isMinimizing) {
+      el.style.display = 'flex';
+      this.applyDockMorphFrame(el, geometry, 1);
     }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(runAnimation);
-    });
+    const start = performance.now();
+    const duration = 500; // Snappy macOS-like duration
+
+    // macOS Genie uses a smooth ease-in-out
+    const easeInOut = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    const frame = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = easeInOut(t);
+      const morph = isMinimizing ? eased : Math.max(0, 1 - eased);
+
+      this.applyDockMorphFrame(el, geometry, morph);
+
+      if (t < 1) {
+        requestAnimationFrame(frame);
+        return;
+      }
+
+      this.resetDockMorphStyles(el);
+      
+      if (isMinimizing) {
+        this.minimize.emit(this.windowState.id);
+      } else {
+        el.style.display = ''; 
+      }
+      
+      requestAnimationFrame(() => {
+        this.isAnimating = false;
+      });
+    };
+
+    requestAnimationFrame(frame);
   }
 
   onMaximize(): void {
@@ -326,39 +343,27 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
   }
 
   private getDockMorphGeometry(rect: DOMRect): DockMorphGeometry {
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const dock = getDockCenter(this.windowState.appId);
-    const dockX = dock ? dock.x : window.innerWidth / 2;
-    const dockY = dock ? dock.y : window.innerHeight - 50;
-    const unclampedRatio = (dockX - rect.left) / Math.max(rect.width, 1);
-
-    return {
-      deltaX: dockX - centerX,
-      deltaY: dockY - centerY,
-      centerRatio: Math.min(0.92, Math.max(0.08, unclampedRatio)),
-    };
+    // Deprecated: calculations moved into runDockMorphAnimation directly
+    return { deltaX: 0, deltaY: 0, targetScale: 1 };
   }
 
   private applyDockMorphFrame(el: HTMLElement, geometry: DockMorphGeometry, morph: number): void {
-    const topWidth = Math.max(12, 100 - 72 * morph);
-    const bottomWidth = Math.max(4, 100 - 97 * Math.pow(morph, 0.82));
-    const centerPercent = geometry.centerRatio * 100;
-    const topLeft = centerPercent - topWidth / 2;
-    const topRight = centerPercent + topWidth / 2;
-    const bottomLeft = centerPercent - bottomWidth / 2;
-    const bottomRight = centerPercent + bottomWidth / 2;
-    const scaleX = 1 - 0.18 * morph;
-    const scaleY = Math.max(0.025, 1 - 0.93 * morph);
-    const skewX = (geometry.centerRatio - 0.5) * 18 * morph;
-    const blur = 8 * Math.pow(morph, 1.35);
-    const opacity = Math.max(0.03, 1 - Math.pow(morph, 1.15));
+    // Squeeze the window non-proportionally to simulate Genie effect
+    // Width shrinks slightly faster to create a sucked-in look
+    const morphX = Math.pow(morph, 0.8);
+    const morphY = Math.pow(morph, 1.2);
 
-    el.style.transformOrigin = `${centerPercent}% 100%`;
-    el.style.transform = `translate(${geometry.deltaX * morph}px, ${geometry.deltaY * morph}px) scale(${scaleX}, ${scaleY}) skewX(${skewX}deg)`;
-    el.style.clipPath = `polygon(${topLeft}% 0%, ${topRight}% 0%, ${bottomRight}% 100%, ${bottomLeft}% 100%)`;
+    const scaleX = Math.max(0.01, 1 - morphX * (1 - geometry.targetScale));
+    const scaleY = Math.max(0.01, 1 - morphY * (1 - geometry.targetScale));
+
+    el.style.transformOrigin = `center bottom`;
+    el.style.transform = `translate(${geometry.deltaX * morph}px, ${geometry.deltaY * morph}px) scale(${scaleX}, ${scaleY})`;
+    
+    // Keep it fully opaque like macOS until the very last frame
+    const opacity = morph > 0.95 ? 1 - ((morph - 0.95) * 20) : 1;
     el.style.opacity = String(opacity);
-    el.style.filter = `blur(${blur}px)`;
+    el.style.filter = '';
+    el.style.clipPath = '';
   }
 
   private resetDockMorphStyles(el: HTMLElement): void {

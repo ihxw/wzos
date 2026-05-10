@@ -32,11 +32,14 @@ export class WindowManagerService {
   constructor() {}
 
   openWindow(appId: string, title: string, componentType: Type<any>, options?: Partial<WindowState>): string {
-    // For image-viewer, always open a new window
-    const reuseWindow = appId !== 'image-viewer';
+    // For image-viewer, open a new window when opening a file, but restore existing when clicked from dock
+    const isDockLaunch = appId === 'image-viewer' && (!options?.inputs || !options.inputs['files']);
+    const reuseWindow = appId !== 'image-viewer' || isDockLaunch;
+
     if (reuseWindow) {
-      const existingWindow = this.windows.find(w => w.appId === appId);
-      if (existingWindow) {
+      const existingWindows = this.windows.filter(w => w.appId === appId);
+      if (existingWindows.length > 0) {
+        const existingWindow = existingWindows.sort((a, b) => b.zIndex - a.zIndex)[0];
         if (existingWindow.isMinimized) {
           this.restoreWindow(existingWindow.id);
         } else {

@@ -70,12 +70,11 @@ export class Dock {
   }
 
   getScale(index: number): number {
-    const factor = this.getInfluence(index);
-    return 1 + (this.DOCK_MAGNIFICATION - 1) * factor;
+    return 1;
   }
 
   getLift(index: number): number {
-    return this.DOCK_LIFT * this.getInfluence(index);
+    return 0;
   }
 
   /** Trigger bounce animation for a dock item */

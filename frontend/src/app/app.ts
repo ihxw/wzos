@@ -615,8 +615,11 @@ export class App implements OnInit {
 
   loadDesktopFiles(): void {
     const u = this.authService.username;
-    const candidates: string[] = [];
-    if (u) {
+    const candidates: string[] = [
+      '/home/yu/Desktop',
+      '/home/yu/桌面'
+    ];
+    if (u && u !== 'yu') {
       candidates.push(`/home/${u}/Desktop`, `/home/${u}/桌面`, `/home/${u}`);
     }
     candidates.push('/root/Desktop', '/root/桌面', '/root', '/home', '/');
