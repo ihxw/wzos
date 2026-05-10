@@ -227,3 +227,34 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+// Global style for dock context menu (rendered in overlay)
+::ng-deep .macos-dock-menu {
+  border-radius: 12px !important;
+  padding: 5px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  background: rgba(40, 40, 40, 0.8) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  min-width: 160px;
+
+  .ant-dropdown-menu-item {
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    margin: 2px 0 !important;
+    padding: 6px 16px !important;
+    font-size: 13px !important;
+    font-weight: 500;
+    transition: background 0.1s;
+
+    &:hover {
+      background: #007aff !important;
+    }
+  }
+
+  .ant-dropdown-menu-item-divider {
+    background: rgba(255, 255, 255, 0.15) !important;
+    margin: 4px 10px !important;
+  }
+}

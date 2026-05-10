@@ -162,15 +162,15 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
     const dockX = dock ? dock.x : window.innerWidth / 2;
     const dockY = dock ? dock.y : window.innerHeight;
 
-    // Use center bottom as the transform origin for the "suck in" effect
+    // Use center center as the transform origin for the uniform collapse effect
     const originX = left + width / 2;
-    const originY = top + height;
+    const originY = top + height / 2;
 
-    const targetScale = 40 / Math.max(width, height, 1);
+    const targetScale = 0.01; // Collapse to practically nothing
 
     const geometry: DockMorphGeometry = {
-      deltaX: dockX - originX,
-      deltaY: dockY - originY,
+      deltaX: 0,
+      deltaY: 0,
       targetScale
     };
 
@@ -348,19 +348,15 @@ export class WindowWrapperComponent implements OnInit, OnDestroy {
   }
 
   private applyDockMorphFrame(el: HTMLElement, geometry: DockMorphGeometry, morph: number): void {
-    // Squeeze the window non-proportionally to simulate Genie effect
-    // Width shrinks slightly faster to create a sucked-in look
-    const morphX = Math.pow(morph, 0.8);
-    const morphY = Math.pow(morph, 1.2);
+    // 向内坍塌 (Proportional Scale Effect)
+    // 整体等比缩放，形成向内收缩坍塌的感觉
+    const scale = Math.max(0.01, 1 - morph * (1 - geometry.targetScale));
 
-    const scaleX = Math.max(0.01, 1 - morphX * (1 - geometry.targetScale));
-    const scaleY = Math.max(0.01, 1 - morphY * (1 - geometry.targetScale));
-
-    el.style.transformOrigin = `center bottom`;
-    el.style.transform = `translate(${geometry.deltaX * morph}px, ${geometry.deltaY * morph}px) scale(${scaleX}, ${scaleY})`;
+    el.style.transformOrigin = `center center`;
+    el.style.transform = `translate(${geometry.deltaX * morph}px, ${geometry.deltaY * morph}px) scale(${scale})`;
     
-    // Keep it fully opaque like macOS until the very last frame
-    const opacity = morph > 0.95 ? 1 - ((morph - 0.95) * 20) : 1;
+    // Fade out near the end
+    const opacity = morph > 0.85 ? 1 - ((morph - 0.85) * (1 / 0.15)) : 1;
     el.style.opacity = String(opacity);
     el.style.filter = '';
     el.style.clipPath = '';

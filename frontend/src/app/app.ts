@@ -90,6 +90,9 @@ const WALLPAPER_PRESETS: WallpaperPreset[] = [
 })
 export class App implements OnInit {
   isAuthenticated = false;
+  showQuickLook = false;
+  quickLookFile: FileInfo | null = null;
+  pendingSelectDesktopPath: string | null = null;
   private readonly dockSizeStorageKey = 'wzos-dock-icon-size';
 
   apps: DesktopApp[] = [
@@ -347,6 +350,13 @@ export class App implements OnInit {
     }
   }
 
+  closeAppFromDock(app: DesktopApp) {
+    const windows = this.windowManager.getWindows().filter(w => w.appId === app.id);
+    for (const w of windows) {
+      this.windowManager.closeWindow(w.id);
+    }
+  }
+
   closeWindow(windowId: string) {
     this.windowManager.closeWindow(windowId);
   }
@@ -377,6 +387,16 @@ export class App implements OnInit {
     this.nzContextMenuService.create($event, menu);
   }
 
+  private getUniqueDesktopName(base: string): string {
+    const names = this.desktopFiles.map(f => f.name);
+    if (!names.includes(base)) return base;
+    let i = 2;
+    while (names.includes(`${base} ${i}`)) {
+      i++;
+    }
+    return `${base} ${i}`;
+  }
+
   handleMenuAction(action: string): void {
     this.nzContextMenuService.close();
     if (action === 'Change Wallpaper') {
@@ -386,14 +406,21 @@ export class App implements OnInit {
     } else if (action === 'Toggle Hidden') {
       this.toggleHiddenDesktopFiles();
     } else if (action === 'New Folder') {
-      const name = prompt('请输入新文件夹名称:');
-      if (name && name.trim()) {
-        const path = this.desktopPath + '/' + name.trim();
-        this.http.post('/api/files/create', { path, isDir: true }).subscribe({
-          next: () => this.loadDesktopFiles(),
-          error: (err) => alert('创建失败: ' + (err.error?.error || err.message))
-        });
-      }
+      const name = this.getUniqueDesktopName('未命名文件夹');
+      const path = this.desktopPath + '/' + name;
+      this.pendingSelectDesktopPath = path;
+      this.http.post('/api/files/create', { path, isDir: true }).subscribe({
+        next: () => this.loadDesktopFiles(),
+        error: (err) => alert('创建失败: ' + (err.error?.error || err.message))
+      });
+    } else if (action === 'New File') {
+      const name = this.getUniqueDesktopName('未命名文件');
+      const path = this.desktopPath + '/' + name;
+      this.pendingSelectDesktopPath = path;
+      this.http.post('/api/files/create', { path, isDir: false }).subscribe({
+        next: () => this.loadDesktopFiles(),
+        error: (err) => alert('创建失败: ' + (err.error?.error || err.message))
+      });
     }
   }
 
@@ -648,6 +675,13 @@ export class App implements OnInit {
                 col++;
                 if (col >= 8) { col = 0; row++; }
               }
+            }
+
+            if (this.pendingSelectDesktopPath) {
+              const p = this.pendingSelectDesktopPath;
+              this.pendingSelectDesktopPath = null;
+              this.clearDesktopSelection();
+              this.selectedDesktopFiles.add(p);
             }
           } else {
             tryNext(index + 1);

@@ -7,6 +7,7 @@
           <div
             class="dock-item"
             (click)="open(app)"
+            (contextmenu)="onContextMenu($event, dockMenu, app)"
             (mouseenter)="onMouseEnter(i)"
             [class.active]="app.isOpen"
             [class.bouncing]="bounceIndex === i"
@@ -41,3 +42,11 @@
     </div>
   </div>
 </div>
+
+<nz-dropdown-menu #dockMenu="nzDropdownMenu">
+  <ul nz-menu class="macos-dock-menu">
+    <li nz-menu-item (click)="handleMenuAction('open')">打开</li>
+    <li nz-menu-divider *ngIf="contextMenuApp?.isOpen"></li>
+    <li nz-menu-item *ngIf="contextMenuApp?.isOpen" (click)="handleMenuAction('close')">退出</li>
+  </ul>
+</nz-dropdown-menu>

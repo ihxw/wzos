@@ -29,7 +29,8 @@
     [dynamicApps]="dynamicDockApps"
     [iconSize]="dockIconSize"
     (iconSizeChange)="updateDockIconSize($event)"
-    (onOpen)="openApp($event)">
+    (onOpen)="openApp($event)"
+    (onClose)="closeAppFromDock($event)">
   </app-dock>
 
   <app-window-wrapper
@@ -128,6 +129,7 @@
 <nz-dropdown-menu #menu="nzDropdownMenu">
   <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
     <li nz-menu-item (click)="handleMenuAction('New Folder')">新建文件夹</li>
+    <li nz-menu-item (click)="handleMenuAction('New File')">新建文件</li>
     <li nz-menu-item (click)="handleMenuAction('Get Info')">显示简介</li>
     <li nz-menu-divider></li>
     <li nz-menu-item (click)="handleMenuAction('Toggle Hidden')">{{ showHiddenDesktopFiles ? '隐藏' : '显示' }}隐藏文件</li>

@@ -1,11 +1,12 @@
 import { Component, ElementRef, Input, Output, EventEmitter, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import { DesktopApp } from '../../core/models/app.model';
 
 @Component({
   selector: 'app-dock',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NzDropDownModule],
   templateUrl: './dock.html',
   styleUrls: ['./dock.scss']
 })
@@ -14,6 +15,7 @@ export class Dock {
   @Input() dynamicApps: DesktopApp[] = [];
   @Input() iconSize = 52;
   @Output() onOpen = new EventEmitter<DesktopApp>();
+  @Output() onClose = new EventEmitter<DesktopApp>();
   @Output() iconSizeChange = new EventEmitter<number>();
   @ViewChildren('dockItemWrapper') dockItemWrappers!: QueryList<ElementRef<HTMLElement>>;
 
@@ -21,6 +23,9 @@ export class Dock {
   bounceIndex: number | null = null;
   pointerX: number | null = null;
   showSizeControl = false;
+  contextMenuApp: DesktopApp | null = null;
+
+  constructor(private nzContextMenuService: NzContextMenuService) {}
 
   private readonly DOCK_MAGNIFICATION = 1.72;
   private readonly DOCK_LIFT = 18;
@@ -40,6 +45,24 @@ export class Dock {
 
   onMouseEnter(index: number) {
     this.hoveredIndex = index;
+  }
+
+  onContextMenu(event: MouseEvent, menu: NzDropdownMenuComponent, app: DesktopApp): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.contextMenuApp = app;
+    this.nzContextMenuService.create(event, menu);
+  }
+
+  handleMenuAction(action: string): void {
+    this.nzContextMenuService.close();
+    if (!this.contextMenuApp) return;
+    
+    if (action === 'open') {
+      this.open(this.contextMenuApp);
+    } else if (action === 'close') {
+      this.onClose.emit(this.contextMenuApp);
+    }
   }
 
   onDockMouseMove(event: MouseEvent) {

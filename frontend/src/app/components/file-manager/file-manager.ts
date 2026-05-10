@@ -170,6 +170,16 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         this.files = sorted;
         this.loading = false;
 
+        if (this.pendingSelectAndRenamePath) {
+          const targetPath = this.pendingSelectAndRenamePath;
+          this.pendingSelectAndRenamePath = null;
+          this.selectedFiles.add(targetPath);
+          setTimeout(() => {
+            const targetFile = this.files.find(f => f.path === targetPath);
+            if (targetFile) this.startRename(targetFile);
+          }, 50);
+        }
+
         if (recordHistory) {
           if (this.historyIndex < this.history.length - 1) {
             this.history = this.history.slice(0, this.historyIndex + 1);
@@ -383,6 +393,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // ===== Selection =====
   private lastClickedIndex = -1;
+  private pendingSelectAndRenamePath: string | null = null;
 
   toggleSelection(file: FileInfo, event: MouseEvent): void {
     event.stopPropagation();
@@ -517,22 +528,30 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   // ===== File Operations =====
-  createNew(isDir: boolean): void {
-    const label = isDir ? '文件夹' : '文件';
-    const name = prompt(`请输入新${label}名称:`);
-    if (!name || !name.trim()) return;
-    const clean = name.trim();
-    if (clean.includes('/')) {
-      this.message.error('名称不能包含 /');
-      return;
+  private getUniqueName(base: string): string {
+    const names = this.files.map(f => f.name);
+    if (!names.includes(base)) return base;
+    let i = 2;
+    while (names.includes(`${base} ${i}`)) {
+      i++;
     }
+    return `${base} ${i}`;
+  }
+
+  createNew(isDir: boolean): void {
+    const baseName = isDir ? '未命名文件夹' : '未命名文件';
+    const clean = this.getUniqueName(baseName);
     const path = this.currentPath === '/' ? '/' + clean : this.currentPath + '/' + clean;
+    
+    this.pendingSelectAndRenamePath = path;
     const sub = this.fileService.createFileOrFolder(path, isDir).subscribe({
       next: () => {
         this.navigateTo(this.currentPath, false);
-        this.message.success(`已创建 ${clean}`);
       },
-      error: (err) => this.message.error('创建失败: ' + (err.error?.error || err.message))
+      error: (err) => {
+        this.pendingSelectAndRenamePath = null;
+        this.message.error('创建失败: ' + (err.error?.error || err.message));
+      }
     });
     this.subs.push(sub);
   }
