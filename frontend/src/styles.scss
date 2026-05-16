@@ -48,6 +48,11 @@
     0 24px 60px rgba(0, 0, 0, 0.05);
   --wzos-shadow-dock: 0 5px 20px rgba(0, 0, 0, 0.12);
   --wzos-shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  // UI icons (monochrome chrome — not dock/app PNG icons)
+  --wzos-icon-ui: var(--wzos-text-secondary);
+  --wzos-icon-ui-muted: var(--wzos-text-tertiary);
+  --wzos-icon-on-tile: #ffffff;
 }
 
 // ===== Dark Mode =====
@@ -193,4 +198,36 @@ select:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--wzos-accent-color, #007aff);
   outline-offset: 1px;
+}
+
+// ===== Unified UI icon color (macOS-style secondary gray) =====
+.wzos-ui-icon {
+  color: var(--wzos-icon-ui);
+  flex-shrink: 0;
+}
+
+.settings-sidebar .menu-icon svg,
+.network-pane .service-icon svg {
+  color: var(--wzos-icon-on-tile) !important;
+}
+
+.network-pane .chevron,
+.network-pane .wifi-signal,
+.network-pane .wifi-lock,
+.network-pane .back-btn svg,
+.network-pane .details-toggle svg {
+  color: var(--wzos-icon-ui-muted);
+}
+
+.about-btn .wzos-ui-icon {
+  color: var(--wzos-accent-color);
+}
+
+// ng-zorro outline icons in apps
+.anticon {
+  color: var(--wzos-icon-ui-muted);
+}
+
+.top-bar svg {
+  color: inherit;
 }

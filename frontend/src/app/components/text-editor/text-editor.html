@@ -1,0 +1,31 @@
+<div class="text-editor">
+  <div class="te-toolbar">
+    <span class="te-title">{{ fileName || '未命名' }}</span>
+    <span class="te-dot" *ngIf="dirty">•</span>
+    <span class="te-lang">{{ editorLanguage }}</span>
+    <span class="te-status" *ngIf="statusMessage">{{ statusMessage }}</span>
+    <div class="te-actions">
+      <button type="button" class="te-btn" [disabled]="loading || saving" (click)="reload()">重新加载</button>
+      <button type="button" class="te-btn primary" [disabled]="loading || saving || !dirty" (click)="save()">
+        {{ saving ? '保存中…' : '保存' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="te-body" *ngIf="!loading && !error">
+    <app-monaco-editor
+      class="te-monaco"
+      [value]="content"
+      [language]="editorLanguage"
+      [theme]="editorTheme"
+      [readOnly]="readOnly"
+      (valueChange)="onContentChange($event)">
+    </app-monaco-editor>
+  </div>
+
+  <div class="te-loading" *ngIf="loading">正在加载文件…</div>
+  <div class="te-error" *ngIf="error">
+    <p>{{ error }}</p>
+    <button type="button" class="te-btn" (click)="reload()">重试</button>
+  </div>
+</div>

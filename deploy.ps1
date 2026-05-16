@@ -1,15 +1,24 @@
 # WZOS 本地交叉编译并部署到 Linux ARM64
-# 用法: .\deploy.ps1 -TargetHost 192.168.1.151 -User root
+# 用法: .\deploy.ps1 -TargetHost 192.168.1.150 -User root
 
 param(
-    [string]$TargetHost = "192.168.1.151",
-    [string]$User = "root",
-    [string]$Arch = "arm64",
+    [string]$TargetHost,
+    [string]$User,
+    [string]$Arch,
     [switch]$ResetDb
 )
 
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
+
+$configPath = Join-Path $Root "wzos.deploy.json"
+$cfg = $null
+if (Test-Path $configPath) {
+    $cfg = Get-Content $configPath -Raw | ConvertFrom-Json
+}
+if (-not $TargetHost) { $TargetHost = if ($cfg.targetHost) { $cfg.targetHost } else { "192.168.1.150" } }
+if (-not $User) { $User = if ($cfg.user) { $cfg.user } else { "root" } }
+if (-not $Arch) { $Arch = if ($cfg.arch) { $cfg.arch } else { "arm64" } }
 $Backend = Join-Path $Root "backend"
 $Frontend = Join-Path $Root "frontend"
 $Dist = Join-Path $Backend "dist"

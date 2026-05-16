@@ -422,6 +422,15 @@
         p { margin: 0; font-size: 14px; }
         button { margin-top: 8px; border-radius: 6px; }
 
+        .empty-state-icon {
+          font-size: 48px;
+          color: var(--wzos-icon-ui-muted) !important;
+
+          &--warn {
+            color: #ff9500 !important;
+          }
+        }
+
         &.error-state p {
           color: #ff9500;
           max-width: 400px;
@@ -1140,14 +1149,25 @@
       flex-shrink: 0;
 
       .status-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         opacity: 0.6;
         font-family: 'SF Mono', 'Menlo', monospace;
         font-size: 10px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 50%;
-        direction: rtl;
+        max-width: 55%;
+
+        .status-disk {
+          flex-shrink: 0;
+          direction: ltr;
+        }
+
+        .status-path {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          direction: rtl;
+        }
       }
     }
   }

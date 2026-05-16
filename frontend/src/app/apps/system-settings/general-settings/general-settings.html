@@ -1,0 +1,130 @@
+<div class="general-pane">
+  <h2 class="general-title">{{ t.title }}</h2>
+
+  <div class="general-hint" *ngIf="settings?.capabilities?.hint && !error">
+    {{ settings!.capabilities.hint }}
+  </div>
+
+  <div class="general-loading" *ngIf="loading">{{ t.loading }}</div>
+  <div class="general-error" *ngIf="error">{{ error }}</div>
+  <button type="button" class="general-retry" *ngIf="error" (click)="loadSettings()">{{ t.retry }}</button>
+  <div class="general-message" *ngIf="message">{{ message }}</div>
+
+  <ng-container *ngIf="settings && !loading">
+    <div class="general-section">
+      <div class="section-caption">{{ t.aboutDevice }}</div>
+      <div class="general-card">
+        <div class="card-row">
+          <span class="row-label">{{ t.computerName }}</span>
+          <input
+            type="text"
+            class="macos-input"
+            [(ngModel)]="editHostname"
+            [disabled]="saving || !caps?.canSetHostname"
+            (keyup.enter)="applyHostname()">
+          <button
+            type="button"
+            class="macos-btn primary"
+            [disabled]="saving || !caps?.canSetHostname || editHostname.trim() === settings.hostname"
+            (click)="applyHostname()">
+            {{ t.apply }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="general-section">
+      <div class="section-caption">{{ t.dateTime }}</div>
+      <div class="general-card">
+        <div class="card-row static-row">
+          <span class="row-label">{{ t.currentTime }}</span>
+          <span class="row-value mono">{{ displayTime || settings.localTime }}</span>
+        </div>
+        <div class="card-row">
+          <span class="row-label">{{ t.timezone }}</span>
+          <select
+            class="macos-select"
+            [(ngModel)]="editTimezone"
+            [disabled]="saving || !caps?.canSetTimezone"
+            (ngModelChange)="onTimezoneChange()">
+            <option *ngFor="let tz of timezoneOptions" [value]="tz">{{ tz }}</option>
+          </select>
+        </div>
+        <div class="card-row toggle-row">
+          <div class="toggle-text">
+            <span class="row-label block">{{ t.ntpSync }}</span>
+            <span class="row-sublabel">{{ t.ntpSyncSub }}</span>
+          </div>
+          <label class="macos-toggle">
+            <input
+              type="checkbox"
+              [checked]="settings.ntpSync"
+              [disabled]="saving || !caps?.canSetNTP"
+              (change)="onNTPToggle($any($event.target).checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="general-section">
+      <div class="section-caption">{{ t.language }}</div>
+      <div class="general-card">
+        <div class="card-row">
+          <span class="row-label">{{ t.locale }}</span>
+          <select
+            class="macos-select"
+            [(ngModel)]="editLocale"
+            [disabled]="saving || !caps?.canSetLocale"
+            (ngModelChange)="onLocaleChange()">
+            <option *ngFor="let loc of settings.locales" [value]="loc.code">{{ loc.label }}</option>
+          </select>
+        </div>
+        <p class="card-hint">{{ t.localeHint }}</p>
+      </div>
+    </div>
+
+    <div class="general-section">
+      <div class="section-caption">{{ t.loginItems }}</div>
+      <div class="general-card">
+        <div class="card-row toggle-row">
+          <div class="toggle-text">
+            <span class="row-label block">{{ t.wzosPanel }}</span>
+            <span class="row-sublabel">
+              {{ t.wzosPanelSub }}
+              · {{ settings.wzosServiceActive ? t.wzosRunning : t.wzosStopped }}
+            </span>
+          </div>
+          <label class="macos-toggle">
+            <input
+              type="checkbox"
+              [checked]="settings.wzosServiceEnabled"
+              [disabled]="saving || !caps?.canManageWzos"
+              (change)="onWZOSToggle($any($event.target).checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="general-section">
+      <div class="section-caption">{{ t.menuBar }}</div>
+      <div class="general-card">
+        <div class="card-row toggle-row">
+          <span class="row-label">{{ t.clock24h }}</span>
+          <label class="macos-toggle">
+            <input type="checkbox" [(ngModel)]="uiPrefs.clock24h" (ngModelChange)="onUIPrefsChange()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="card-row toggle-row">
+          <span class="row-label">{{ t.showSeconds }}</span>
+          <label class="macos-toggle">
+            <input type="checkbox" [(ngModel)]="uiPrefs.showSeconds" (ngModelChange)="onUIPrefsChange()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

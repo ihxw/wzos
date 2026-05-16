@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NetworkSettingsComponent } from './network-settings/network-settings';
+import { GeneralSettingsComponent } from './general-settings/general-settings';
+import { ServicesSettingsComponent } from './services-settings/services-settings';
 
 interface SystemInfo {
   cpu_usage: number;
@@ -93,11 +95,62 @@ const DEFAULT_SETTINGS: AppearanceSettings = {
 @Component({
   selector: 'app-system-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, NetworkSettingsComponent],
+  imports: [CommonModule, FormsModule, NetworkSettingsComponent, GeneralSettingsComponent, ServicesSettingsComponent],
   templateUrl: './system-settings.html',
   styleUrls: ['./system-settings.scss']
 })
 export class SystemSettingsComponent implements OnInit {
+  readonly t = {
+    search: '搜索',
+    sectionBasic: '基础设置',
+    sectionSystem: '系统信息',
+    about: '关于本机',
+    general: '通用',
+    generalPlaceholder: '通用设置开发中...',
+    appearance: '外观',
+    services: '服务管理',
+    servicesPlaceholder: '服务管理功能开发中...',
+    light: '浅色',
+    dark: '深色',
+    auto: '自动',
+    accentColor: '强调色',
+    highlightColor: '高亮颜色',
+    scrollBars: '显示滚动条',
+    scrollAuto: '根据鼠标或触控板自动显示',
+    scrollWhenScrolling: '滚动时',
+    scrollAlways: '始终',
+    scrollClick: '在滚动条中点击',
+    scrollNextPage: '跳转到下一页',
+    scrollJumpSpot: '跳转到点击的位置',
+    horizontalTabs: '滚动时首选水平标签页',
+    horizontalTabsSub: '在标签页数量较多时水平排列而非垂直堆叠',
+    wallpaperTint: '允许墙纸在窗口中着色',
+    wallpaperTintSub: '窗口背景会轻微着色以匹配桌面墙纸的颜色',
+    defaultBrowser: '默认网页浏览器',
+    chip: '芯片',
+    memory: '内存',
+    gpu: '图形卡',
+    serial: '序列号',
+    os: '操作系统',
+    kernel: '内核版本',
+    hostname: '主机名',
+    uptime: '运行时间',
+    systemReport: '系统报告...',
+    hardwareOverview: '硬件概览',
+    softwareOverview: '系统软件概览',
+    resourceUsage: '资源使用',
+    modelName: '型号名称',
+    processor: '处理器',
+    cpuCores: '处理器核心数',
+    arch: '架构',
+    cpuUsage: 'CPU 使用率',
+    memoryUsed: '内存已使用',
+    diskUsed: '磁盘已使用',
+    loading: '正在加载系统信息...',
+    copyright: '© 2024 WZOS. 保留所有权利。',
+    emDash: '—'
+  };
+
   selectedMenu = 'about';
   systemInfo: SystemInfo | null = null;
   loading = false;
@@ -129,7 +182,24 @@ export class SystemSettingsComponent implements OnInit {
     this.selectedMenu = key;
   }
 
-  onSearch() {}
+  get filteredCategories(): MenuCategory[] {
+    const q = this.searchText.trim().toLowerCase();
+    if (!q) return this.categories;
+    return this.categories.filter(c => c.label.toLowerCase().includes(q));
+  }
+
+  get showAboutInSearch(): boolean {
+    const q = this.searchText.trim().toLowerCase();
+    return !q || '关于本机'.includes(q) || q.includes('about');
+  }
+
+  onSearch(): void {
+    if (this.filteredCategories.length > 0) {
+      this.selectedMenu = this.filteredCategories[0].key;
+    } else if (this.showAboutInSearch) {
+      this.selectedMenu = 'about';
+    }
+  }
 
   loadSystemInfo() {
     this.loading = true;

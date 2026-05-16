@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"bytes"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wzos/backend/models"
@@ -26,6 +28,8 @@ func RegisterFileRoutes(r gin.IRouter) {
 		files.POST("/upload", UploadFile)
 		files.GET("/download", DownloadFile)
 		files.GET("/view", ViewFile)
+		files.GET("/content", ReadFileContent)
+		files.PUT("/content", WriteFileContent)
 		files.GET("/diskusage", DiskUsage)
 		files.POST("/favorites/add", AddFavorite)
 		files.POST("/favorites/delete", DeleteFavorite)
@@ -295,6 +299,93 @@ func ViewFile(c *gin.Context) {
 	}
 
 	c.File(filePath)
+}
+
+const maxTextEditBytes = 5 * 1024 * 1024
+
+func ReadFileContent(c *gin.Context) {
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Path required"})
+		return
+	}
+
+	filePath = filepath.Clean(filePath)
+	info, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+	if info.IsDir() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot read directory as text"})
+		return
+	}
+	if info.Size() > maxTextEditBytes {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "File too large to edit (max 5MB)"})
+		return
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if bytes.IndexByte(data, 0) >= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Binary file cannot be edited as text"})
+		return
+	}
+	if !utf8.Valid(data) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File is not valid UTF-8 text"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"path":    filePath,
+		"content": string(data),
+		"size":    info.Size(),
+	})
+}
+
+func WriteFileContent(c *gin.Context) {
+	var req struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	if req.Path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Path required"})
+		return
+	}
+
+	filePath := filepath.Clean(req.Path)
+	info, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+	if info.IsDir() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot write directory as text"})
+		return
+	}
+
+	perm := info.Mode().Perm()
+	if err := os.WriteFile(filePath, []byte(req.Content), perm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 // ===== Trash Handlers =====

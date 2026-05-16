@@ -33,8 +33,13 @@ export class WindowManagerService {
 
   openWindow(appId: string, title: string, componentType: Type<any>, options?: Partial<WindowState>): string {
     // For image-viewer, open a new window when opening a file, but restore existing when clicked from dock
-    const isDockLaunch = appId === 'image-viewer' && (!options?.inputs || !options.inputs['files']);
-    const reuseWindow = appId !== 'image-viewer' || isDockLaunch;
+    const multiWindowApps = ['image-viewer', 'text-editor'];
+    const fileInputKey = appId === 'text-editor' ? 'filePath' : 'files';
+    const fileArg = options?.inputs?.[fileInputKey];
+    const isDockLaunch =
+      multiWindowApps.includes(appId) &&
+      (fileArg === undefined || fileArg === null || fileArg === '');
+    const reuseWindow = !multiWindowApps.includes(appId) || isDockLaunch;
 
     if (reuseWindow) {
       const existingWindows = this.windows.filter(w => w.appId === appId);

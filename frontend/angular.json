@@ -29,13 +29,23 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor/min/vs",
+                "output": "/monaco/vs"
               }
             ],
             "styles": [
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "node_modules/winbox/dist/css/winbox.min.css",
               "src/styles.scss"
-            ]
+            ],
+            "loader": {
+              ".ttf": "file",
+              ".woff": "file",
+              ".woff2": "file"
+            }
           },
           "configurations": {
             "production": {
@@ -43,7 +53,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "2MB",
-                  "maximumError": "5MB"
+                  "maximumError": "8MB"
                 },
                 {
                   "type": "anyComponentStyle",

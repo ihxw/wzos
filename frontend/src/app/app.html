@@ -15,7 +15,8 @@
       (onSelect)="onDesktopFileSelect($event)"
       (onDragStart)="onDesktopFileDragStart($event)"
       (onRenameConfirm)="confirmDesktopRename(file, $event)"
-      (onRenameCancel)="cancelDesktopRename()">
+      (onRenameCancel)="cancelDesktopRename()"
+      (onContextMenuFile)="onDesktopFileContextMenu($event, fileMenu)">
     </app-desktop-file>
 
     <!-- Rubber-band selection overlay -->
@@ -127,6 +128,25 @@
       </div>
     </div>
   </div>
+
+  <div class="desktop-get-info" *ngIf="showDesktopGetInfo && desktopGetInfoFile" (click)="closeDesktopGetInfo()">
+    <div class="desktop-get-info-card" (click)="$event.stopPropagation()">
+      <div class="dgi-header">
+        <span>{{ desktopGetInfoFile.name }} 简介</span>
+        <button type="button" class="dgi-close" (click)="closeDesktopGetInfo()">×</button>
+      </div>
+      <div class="dgi-body">
+        <div class="dgi-row"><span>种类</span><span>{{ desktopGetInfoFile.kind || (desktopGetInfoFile.isDir ? '文件夹' : '文稿') }}</span></div>
+        <div class="dgi-row"><span>大小</span><span>{{ desktopGetInfoFile.isDir ? '--' : formatDesktopBytes(desktopGetInfoFile.size) }}</span></div>
+        <div class="dgi-row" *ngIf="desktopGetInfoFile.openWith"><span>打开方式</span><span>{{ desktopGetInfoFile.openWith }}</span></div>
+        <div class="dgi-row" *ngIf="desktopGetInfoFile.mimeType"><span>MIME</span><span>{{ desktopGetInfoFile.mimeType }}</span></div>
+        <div class="dgi-row"><span>路径</span><span class="dgi-path">{{ desktopGetInfoFile.path }}</span></div>
+      </div>
+      <div class="dgi-actions">
+        <button type="button" (click)="openDesktopFile(desktopGetInfoFile); closeDesktopGetInfo()">打开</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <nz-dropdown-menu #menu="nzDropdownMenu">
@@ -140,6 +160,16 @@
     <li nz-menu-item (click)="handleMenuAction('Change Wallpaper')">更改桌面背景...</li>
     <li nz-menu-divider></li>
     <li nz-menu-item (click)="handleMenuAction('Refresh')">刷新</li>
+  </ul>
+</nz-dropdown-menu>
+
+<nz-dropdown-menu #fileMenu="nzDropdownMenu">
+  <ul nz-menu style="border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+    <li nz-menu-item (click)="handleDesktopFileMenuAction('open')">打开</li>
+    <li nz-menu-item (click)="handleDesktopFileMenuAction('get-info')">显示简介</li>
+    <li nz-menu-item (click)="handleDesktopFileMenuAction('rename')">重新命名</li>
+    <li nz-menu-divider></li>
+    <li nz-menu-item (click)="handleDesktopFileMenuAction('trash')">移到废纸篓</li>
   </ul>
 </nz-dropdown-menu>
 

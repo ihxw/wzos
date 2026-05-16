@@ -1,0 +1,111 @@
+.text-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--wzos-bg-window, #1e1e1e);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+}
+
+.te-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--wzos-border-subtle, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  background: var(--wzos-bg-card, #2a2a2a);
+}
+
+.te-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wzos-text-primary, #f5f5f7);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.te-dot {
+  color: var(--wzos-accent-color, #007aff);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.te-lang {
+  font-size: 11px;
+  color: var(--wzos-text-tertiary, #8e8e93);
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--wzos-bg-segmented, rgba(255, 255, 255, 0.06));
+}
+
+.te-status {
+  flex: 1;
+  font-size: 12px;
+  color: var(--wzos-text-tertiary, #8e8e93);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.te-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.te-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: default;
+  background: var(--wzos-bg-segmented, rgba(255, 255, 255, 0.1));
+  color: var(--wzos-text-primary, #f5f5f7);
+
+  &.primary {
+    background: var(--wzos-accent-color, #007aff);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+  }
+}
+
+.te-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.te-monaco {
+  flex: 1;
+  min-height: 0;
+}
+
+.te-loading,
+.te-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--wzos-text-secondary, #aeaeb2);
+}
+
+.te-error p {
+  margin: 0;
+  color: #ff3b30;
+  max-width: 360px;
+  text-align: center;
+  line-height: 1.45;
+}

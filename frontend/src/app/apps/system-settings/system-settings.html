@@ -1,19 +1,18 @@
 <div class="settings-container">
-  <!-- macOS-style sidebar -->
   <div class="settings-sidebar">
     <div class="search-box">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+      <svg class="wzos-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
         <circle cx="11" cy="11" r="7"/>
         <path d="M16.5 16.5L21 21"/>
       </svg>
-      <input type="text" placeholder="Êê?Á¥¢" [(ngModel)]="searchText" (ngModelChange)="onSearch()">
+      <input type="text" [placeholder]="t.search" [(ngModel)]="searchText" (ngModelChange)="onSearch()">
     </div>
 
     <div class="sidebar-scroll">
       <div class="menu-section">
-        <div class="section-label">Â?∫Á°?ËÆæÁΩÆ</div>
+        <div class="section-label">{{ t.sectionBasic }}</div>
         <a class="menu-item"
-          *ngFor="let item of categories"
+          *ngFor="let item of filteredCategories"
           [class.active]="selectedMenu === item.key"
           (click)="selectMenu(item.key)">
           <span class="menu-icon" [style.background]="item.color">
@@ -26,75 +25,65 @@
       </div>
 
       <div class="menu-section">
-        <div class="section-label">Á≥ªÁª?‰ø°ÊÅØ</div>
+        <div class="section-label">{{ t.sectionSystem }}</div>
         <a class="menu-item"
+          *ngIf="showAboutInSearch"
           [class.active]="selectedMenu === 'about'"
           (click)="selectMenu('about')">
-          <span class="menu-icon" style="background:#007aff">
+          <span class="menu-icon menu-icon--about">
             <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
           </span>
-          <span class="menu-label">Â?≥‰∫?Ê?¨Ê?∫</span>
+          <span class="menu-label">{{ t.about }}</span>
         </a>
       </div>
     </div>
   </div>
 
-  <!-- Content -->
   <div class="settings-content">
-    <!-- ===== È??Á?® ===== -->
-    <div *ngIf="selectedMenu === 'general'" class="settings-pane">
-      <h2>È??Á?®</h2>
-      <div class="pane-card">
-        <p class="placeholder-text">È??Á?®ËÆæÁΩÆÂº?Âè?‰∏≠...</p>
-      </div>
-    </div>
+    <app-general-settings *ngIf="selectedMenu === 'general'"></app-general-settings>
 
-    <!-- ===== ?? ===== -->
     <app-network-settings *ngIf="selectedMenu === 'network'"></app-network-settings>
 
-    <!-- ===== ?? ===== -->
     <div *ngIf="selectedMenu === 'appearance'" class="appearance-pane">
-      <h2 class="appearance-title">Â§?Ëß?</h2>
+      <h2 class="appearance-title">{{ t.appearance }}</h2>
 
-      <!-- Appearance Mode -->
       <div class="appearance-section">
         <div class="segmented-control">
           <button class="segment-btn"
             [class.active]="appearance.appearanceMode === 'light'"
             (click)="selectAppearanceMode('light')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+            <svg class="wzos-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
               <circle cx="12" cy="12" r="4"/>
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
             </svg>
-            <span>Êµ?Ë?≤</span>
+            <span>{{ t.light }}</span>
           </button>
           <button class="segment-btn"
             [class.active]="appearance.appearanceMode === 'dark'"
             (click)="selectAppearanceMode('dark')">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+            <svg class="wzos-ui-icon" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
               <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a9 9 0 0 0-5 8.08 8.91 8.91 0 0 0 8.68 8.96c4.06.1 7.6-2.34 8.68-5.96.14-.27.04-.44.28-.44z"/>
             </svg>
-            <span>Ê∑±Ë?≤</span>
+            <span>{{ t.dark }}</span>
           </button>
           <button class="segment-btn"
             [class.active]="appearance.appearanceMode === 'auto'"
             (click)="selectAppearanceMode('auto')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
+            <svg class="wzos-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
               <circle cx="12" cy="12" r="4"/>
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M2 12h2"/>
               <path d="M12 2c-5 0-9 4-9 9s4 9 9 9" stroke-dasharray="1 3"/>
             </svg>
-            <span>Ë?™Â?®</span>
+            <span>{{ t.auto }}</span>
           </button>
         </div>
       </div>
 
-      <!-- Accent Color -->
       <div class="appearance-section">
         <div class="section-label-row">
-          <span class="section-label">Âº∫Ë∞?Ë?≤</span>
+          <span class="section-label">{{ t.accentColor }}</span>
         </div>
         <div class="accent-color-row">
           <button *ngFor="let c of accentColors"
@@ -110,10 +99,9 @@
         </div>
       </div>
 
-      <!-- Highlight Color -->
       <div class="appearance-section">
         <div class="section-label-row">
-          <span class="section-label">È´?‰∫ÆÈ¢?Ë?≤</span>
+          <span class="section-label">{{ t.highlightColor }}</span>
         </div>
         <div class="select-wrapper">
           <select class="macos-select" [(ngModel)]="appearance.highlightColor" (ngModelChange)="onHighlightColorChange()">
@@ -122,56 +110,51 @@
         </div>
       </div>
 
-      <!-- Divider -->
       <div class="section-divider"></div>
 
-      <!-- Show Scroll Bars -->
       <div class="appearance-section">
         <div class="section-label-row">
-          <span class="section-label">Ê?æÁ§∫Êª?Â?®Êù°</span>
+          <span class="section-label">{{ t.scrollBars }}</span>
         </div>
         <div class="radio-group">
           <label class="radio-item" (click)="appearance.scrollBarBehavior = 'auto'; onScrollBarBehaviorChange()">
             <span class="radio-circle" [class.checked]="appearance.scrollBarBehavior === 'auto'"></span>
-            <span class="radio-text">Ê†πÊçÆÈº†Ê†?Ê??Ëß¶Ê?ßÊùøË?™Â?®Ê?æÁ§∫</span>
+            <span class="radio-text">{{ t.scrollAuto }}</span>
           </label>
           <label class="radio-item" (click)="appearance.scrollBarBehavior = 'when-scrolling'; onScrollBarBehaviorChange()">
             <span class="radio-circle" [class.checked]="appearance.scrollBarBehavior === 'when-scrolling'"></span>
-            <span class="radio-text">Êª?Â?®Ê?∂</span>
+            <span class="radio-text">{{ t.scrollWhenScrolling }}</span>
           </label>
           <label class="radio-item" (click)="appearance.scrollBarBehavior = 'always'; onScrollBarBehaviorChange()">
             <span class="radio-circle" [class.checked]="appearance.scrollBarBehavior === 'always'"></span>
-            <span class="radio-text">Âß?Áª?</span>
+            <span class="radio-text">{{ t.scrollAlways }}</span>
           </label>
         </div>
       </div>
 
-      <!-- Click in scroll bar -->
       <div class="appearance-section">
         <div class="section-label-row">
-          <span class="section-label">Â?®Êª?Â?®Êù°‰∏≠Á?πÂ?ª</span>
+          <span class="section-label">{{ t.scrollClick }}</span>
         </div>
         <div class="radio-group">
           <label class="radio-item" (click)="appearance.scrollBarClickAction = 'next-page'; onScrollBarClickActionChange()">
             <span class="radio-circle" [class.checked]="appearance.scrollBarClickAction === 'next-page'"></span>
-            <span class="radio-text">Ë∑≥ËΩ¨Â?∞‰∏?‰∏?È°µ</span>
+            <span class="radio-text">{{ t.scrollNextPage }}</span>
           </label>
           <label class="radio-item" (click)="appearance.scrollBarClickAction = 'jump-to-spot'; onScrollBarClickActionChange()">
             <span class="radio-circle" [class.checked]="appearance.scrollBarClickAction === 'jump-to-spot'"></span>
-            <span class="radio-text">Ë∑≥ËΩ¨Â?∞Á?πÂ?ªÁ??‰ΩçÁΩÆ</span>
+            <span class="radio-text">{{ t.scrollJumpSpot }}</span>
           </label>
         </div>
       </div>
 
-      <!-- Divider -->
       <div class="section-divider"></div>
 
-      <!-- Prefer horizontal tabs -->
       <div class="appearance-section">
         <div class="toggle-row">
           <div class="toggle-label-group">
-            <span class="toggle-label">Êª?Â?®Ê?∂È¶?È??Ê∞¥Âπ≥Ê†?Á≠æÈ°µ</span>
-            <span class="toggle-sublabel">Â?®Ê†?Á≠æÈ°µÊ?∞È?èËæ?Â§?Ê?∂Ê∞¥Âπ≥Ê??Â??Ë??Èù?Â??Á?¥Â†?Âè†</span>
+            <span class="toggle-label">{{ t.horizontalTabs }}</span>
+            <span class="toggle-sublabel">{{ t.horizontalTabsSub }}</span>
           </div>
           <label class="macos-toggle">
             <input type="checkbox" [(ngModel)]="appearance.preferHorizontalTabs" (ngModelChange)="onToggleChange()">
@@ -180,12 +163,11 @@
         </div>
       </div>
 
-      <!-- Allow wallpaper tinting -->
       <div class="appearance-section">
         <div class="toggle-row">
           <div class="toggle-label-group">
-            <span class="toggle-label">Â?ÅËÆ∏Â¢?Á∫∏Â?®Á™?Âè£‰∏≠Áù?Ë?≤</span>
-            <span class="toggle-sublabel">Á™?Âè£Ë??Ê?Ø‰º?ËΩªÂæÆÁù?Ë?≤‰ª•Â?πÈ?çÊ°?Èù¢Â¢?Á∫∏Á??È¢?Ë?≤</span>
+            <span class="toggle-label">{{ t.wallpaperTint }}</span>
+            <span class="toggle-sublabel">{{ t.wallpaperTintSub }}</span>
           </div>
           <label class="macos-toggle">
             <input type="checkbox" [(ngModel)]="appearance.allowWallpaperTinting" (ngModelChange)="onToggleChange()">
@@ -194,13 +176,11 @@
         </div>
       </div>
 
-      <!-- Divider -->
       <div class="section-divider"></div>
 
-      <!-- Default Web Browser -->
       <div class="appearance-section">
         <div class="section-label-row">
-          <span class="section-label">Èª?ËÆ§ÁΩ?È°µÊµèËß?Â?®</span>
+          <span class="section-label">{{ t.defaultBrowser }}</span>
         </div>
         <div class="select-wrapper">
           <select class="macos-select browser-select" [(ngModel)]="appearance.defaultBrowser" (ngModelChange)="onBrowserChange()">
@@ -209,22 +189,13 @@
         </div>
       </div>
 
-      <!-- Bottom spacer -->
       <div class="appearance-bottom-spacer"></div>
     </div>
 
-    <!-- ===== Ê?çÂ?°ÁÆ°Áê? ===== -->
-    <div *ngIf="selectedMenu === 'services'" class="settings-pane">
-      <h2>Ê?çÂ?°ÁÆ°Áê?</h2>
-      <div class="pane-card">
-        <p class="placeholder-text">Ê?çÂ?°ÁÆ°Áê?Â??Ë?ΩÂº?Âè?‰∏≠...</p>
-      </div>
-    </div>
+    <app-services-settings *ngIf="selectedMenu === 'services'"></app-services-settings>
 
-    <!-- ===== Â?≥‰∫?Ê?¨Ê?∫ (macOS-style 1:1) ===== -->
     <div *ngIf="selectedMenu === 'about'" class="about-mac-pane">
       <div class="about-card" *ngIf="systemInfo">
-        <!-- Device Icon Area -->
         <div class="about-icon-area">
           <div class="about-device-icon">
             <svg viewBox="0 0 256 256" width="120" height="120">
@@ -238,166 +209,154 @@
                   <stop offset="100%" stop-color="#8e8e8e"/>
                 </linearGradient>
               </defs>
-              <!-- Monitor stand -->
               <rect x="108" y="190" width="40" height="10" rx="3" fill="url(#baseGrad)"/>
               <rect x="88" y="198" width="80" height="8" rx="4" fill="#a0a0a0"/>
-              <!-- Monitor body -->
               <rect x="28" y="20" width="200" height="170" rx="12" fill="#2c2c3a"/>
               <rect x="36" y="28" width="184" height="150" rx="6" fill="url(#screenGrad)"/>
-              <!-- Screen content - W logo -->
               <circle cx="128" cy="95" r="45" fill="none" stroke="#667eea" stroke-width="6"/>
               <text x="128" y="113" font-size="48" text-anchor="middle" fill="#667eea" font-family="system-ui, sans-serif" font-weight="700">W</text>
             </svg>
           </div>
         </div>
 
-        <!-- Product Name -->
         <div class="about-product-name">
           <span class="about-name">WZOS</span>
           <span class="about-version-badge">{{ systemInfo.os_version || '1.0' }}</span>
         </div>
 
-        <!-- Specs List (macOS style) -->
         <div class="about-specs">
           <div class="spec-row" *ngIf="systemInfo.cpu_brand">
-            <span class="spec-label">Ë?ØÁ??</span>
+            <span class="spec-label">{{ t.chip }}</span>
             <span class="spec-value">{{ systemInfo.cpu_brand }}</span>
           </div>
           <div class="spec-row" *ngIf="systemInfo.memory_total">
-            <span class="spec-label">Â??Â≠?</span>
+            <span class="spec-label">{{ t.memory }}</span>
             <span class="spec-value">{{ formatBytes(systemInfo.memory_total) }}</span>
           </div>
           <div class="spec-row" *ngIf="systemInfo.gpu_info">
-            <span class="spec-label">Â?æÂΩ¢Âç°</span>
+            <span class="spec-label">{{ t.gpu }}</span>
             <span class="spec-value">{{ systemInfo.gpu_info }}</span>
           </div>
           <div class="spec-row">
-            <span class="spec-label">Â∫èÂ??Âè∑</span>
+            <span class="spec-label">{{ t.serial }}</span>
             <span class="spec-value spec-serial">{{ formatSerial(systemInfo.serial_number) }}</span>
           </div>
         </div>
 
-        <!-- Divider -->
         <div class="about-divider"></div>
 
-        <!-- Detail specs (secondary) -->
         <div class="about-detail-specs">
           <div class="detail-row">
-            <span class="spec-label">Ê?ç‰Ω?Á≥ªÁª?</span>
-            <span class="spec-value">{{ systemInfo.os || '‚??' }}</span>
+            <span class="spec-label">{{ t.os }}</span>
+            <span class="spec-value">{{ systemInfo.os || t.emDash }}</span>
           </div>
           <div class="detail-row">
-            <span class="spec-label">Â??Ê†∏Á??Ê?¨</span>
-            <span class="spec-value">{{ systemInfo.kernel || '‚??' }}</span>
+            <span class="spec-label">{{ t.kernel }}</span>
+            <span class="spec-value">{{ systemInfo.kernel || t.emDash }}</span>
           </div>
           <div class="detail-row">
-            <span class="spec-label">‰∏ªÊ?∫Âêç</span>
-            <span class="spec-value">{{ systemInfo.hostname || '‚??' }}</span>
+            <span class="spec-label">{{ t.hostname }}</span>
+            <span class="spec-value">{{ systemInfo.hostname || t.emDash }}</span>
           </div>
           <div class="detail-row">
-            <span class="spec-label">ËøêË°?Ê?∂È?¥</span>
+            <span class="spec-label">{{ t.uptime }}</span>
             <span class="spec-value">{{ formatUptime(systemInfo.uptime) }}</span>
           </div>
         </div>
 
-        <!-- Divider -->
         <div class="about-divider"></div>
 
-        <!-- Action Buttons (macOS style) -->
         <div class="about-actions">
           <button class="about-btn" (click)="showSystemReport = !showSystemReport">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <svg class="wzos-ui-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
             </svg>
-            Á≥ªÁª?Ê?•Â??...
+            {{ t.systemReport }}
           </button>
         </div>
 
-        <!-- System Report Expanded -->
         <div class="about-system-report" *ngIf="showSystemReport">
           <div class="report-section">
-            <div class="report-title">Á°¨‰ª∂Ê¶?Ëß?</div>
+            <div class="report-title">{{ t.hardwareOverview }}</div>
             <table class="report-table">
               <tr>
-                <td class="rt-label">Â??Âè∑ÂêçÁß∞</td>
-                <td class="rt-value">{{ systemInfo.machine_model || '‚??' }}</td>
+                <td class="rt-label">{{ t.modelName }}</td>
+                <td class="rt-value">{{ systemInfo.machine_model || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â§?Áê?Â?®</td>
-                <td class="rt-value">{{ systemInfo.cpu_brand || '‚??' }}</td>
+                <td class="rt-label">{{ t.processor }}</td>
+                <td class="rt-value">{{ systemInfo.cpu_brand || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â§?Áê?Â?®Ê†∏Âø?Ê?∞</td>
-                <td class="rt-value">{{ systemInfo.cpu_cores || '‚??' }}</td>
+                <td class="rt-label">{{ t.cpuCores }}</td>
+                <td class="rt-value">{{ systemInfo.cpu_cores || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â??Â≠?</td>
+                <td class="rt-label">{{ t.memory }}</td>
                 <td class="rt-value">{{ formatBytes(systemInfo.memory_total) }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â?æÂΩ¢Âç°</td>
-                <td class="rt-value">{{ systemInfo.gpu_info || '‚??' }}</td>
+                <td class="rt-label">{{ t.gpu }}</td>
+                <td class="rt-value">{{ systemInfo.gpu_info || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â∫èÂ??Âè∑</td>
-                <td class="rt-value">{{ systemInfo.serial_number || '‚??' }}</td>
+                <td class="rt-label">{{ t.serial }}</td>
+                <td class="rt-value">{{ systemInfo.serial_number || t.emDash }}</td>
               </tr>
             </table>
           </div>
           <div class="report-section">
-            <div class="report-title">Á≥ªÁª?ËΩØ‰ª∂Ê¶?Ëß?</div>
+            <div class="report-title">{{ t.softwareOverview }}</div>
             <table class="report-table">
               <tr>
-                <td class="rt-label">Á≥ªÁª?Á??Ê?¨</td>
-                <td class="rt-value">{{ systemInfo.os || '‚??' }}</td>
+                <td class="rt-label">{{ t.os }}</td>
+                <td class="rt-value">{{ systemInfo.os || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Â??Ê†∏Á??Ê?¨</td>
-                <td class="rt-value">{{ systemInfo.kernel || '‚??' }}</td>
+                <td class="rt-label">{{ t.kernel }}</td>
+                <td class="rt-value">{{ systemInfo.kernel || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Ê?∂Ê??</td>
-                <td class="rt-value">{{ systemInfo.architecture || '‚??' }}</td>
+                <td class="rt-label">{{ t.arch }}</td>
+                <td class="rt-value">{{ systemInfo.architecture || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">‰∏ªÊ?∫Âêç</td>
-                <td class="rt-value">{{ systemInfo.hostname || '‚??' }}</td>
+                <td class="rt-label">{{ t.hostname }}</td>
+                <td class="rt-value">{{ systemInfo.hostname || t.emDash }}</td>
               </tr>
               <tr>
-                <td class="rt-label">ËøêË°?Ê?∂È?¥</td>
+                <td class="rt-label">{{ t.uptime }}</td>
                 <td class="rt-value">{{ formatUptime(systemInfo.uptime) }}</td>
               </tr>
             </table>
           </div>
           <div class="report-section">
-            <div class="report-title">Ëµ?Ê∫ê‰ΩøÁ?®</div>
+            <div class="report-title">{{ t.resourceUsage }}</div>
             <table class="report-table">
               <tr>
-                <td class="rt-label">CPU ‰ΩøÁ?®Á??</td>
+                <td class="rt-label">{{ t.cpuUsage }}</td>
                 <td class="rt-value">{{ systemInfo.cpu_usage | number:'1.1-1' }}%</td>
               </tr>
               <tr>
-                <td class="rt-label">Â??Â≠?Â∑≤‰ΩøÁ?®</td>
+                <td class="rt-label">{{ t.memoryUsed }}</td>
                 <td class="rt-value">{{ formatBytes(systemInfo.memory_used) }} / {{ formatBytes(systemInfo.memory_total) }}</td>
               </tr>
               <tr>
-                <td class="rt-label">Á£ÅÁ??Â∑≤‰ΩøÁ?®</td>
+                <td class="rt-label">{{ t.diskUsed }}</td>
                 <td class="rt-value">{{ formatBytes(systemInfo.disk_used) }} / {{ formatBytes(systemInfo.disk_total) }}</td>
               </tr>
             </table>
           </div>
         </div>
 
-        <!-- Copyright -->
         <div class="about-copyright">
-          <span>¬© 2024 WZOS. ‰øùÁ??Ê??Ê??Êù?Â?©„??</span>
+          <span>{{ t.copyright }}</span>
         </div>
       </div>
 
-      <!-- Loading -->
       <div class="loading-state" *ngIf="!systemInfo && loading">
         <div class="loading-spinner"></div>
-        <p>Ê≠£Â?®Â?†ËΩΩÁ≥ªÁª?‰ø°ÊÅØ...</p>
+        <p>{{ t.loading }}</p>
       </div>
     </div>
   </div>

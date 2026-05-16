@@ -12,7 +12,8 @@ import { FileInfo } from '../../core/services/file.service';
          [style.left.px]="position.x"
          [style.top.px]="position.y"
          (mousedown)="onMouseDown($event)"
-         (dblclick)="onOpenFile.emit(file)">
+         (dblclick)="onOpenFile.emit(file)"
+         (contextmenu)="onContextMenu($event)">
       @if (isImage) {
         <div class="df-icon df-icon-img">
           <img [src]="imageUrl" alt="" loading="lazy" />
@@ -115,6 +116,7 @@ export class DesktopFileComponent {
   @Output() onDragStart = new EventEmitter<{ file: FileInfo; event: MouseEvent }>();
   @Output() onRenameConfirm = new EventEmitter<string>();
   @Output() onRenameCancel = new EventEmitter<void>();
+  @Output() onContextMenuFile = new EventEmitter<{ file: FileInfo; event: MouseEvent }>();
 
   @ViewChild('renameInput') set renameInputEl(el: ElementRef<HTMLInputElement>) {
     if (el && this.renaming) {
@@ -176,6 +178,12 @@ export class DesktopFileComponent {
       case 'sh': case 'bash': case 'exe': case 'app': return '⚙️';
       default: return '📄';
     }
+  }
+
+  onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.onContextMenuFile.emit({ file: this.file, event });
   }
 
   onMouseDown(event: MouseEvent) {

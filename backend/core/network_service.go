@@ -13,13 +13,14 @@ import (
 )
 
 type NetworkOverview struct {
-	Connected      bool             `json:"connected"`
-	InternetReach  bool             `json:"internetReach"`
-	Hostname       string           `json:"hostname"`
-	PrimaryDevice  string           `json:"primaryDevice"`
-	DefaultGateway string           `json:"defaultGateway"`
-	Services       []NetworkService `json:"services"`
-	Backend        string           `json:"backend"`
+	Connected      bool                `json:"connected"`
+	InternetReach  bool                `json:"internetReach"`
+	Hostname       string              `json:"hostname"`
+	PrimaryDevice  string              `json:"primaryDevice"`
+	DefaultGateway string              `json:"defaultGateway"`
+	Services       []NetworkService    `json:"services"`
+	Backend        string              `json:"backend"`
+	Capabilities   NetworkCapabilities `json:"capabilities"`
 }
 
 type NetworkService struct {
@@ -118,6 +119,10 @@ func (s *NetworkServiceCore) GetOverview() (NetworkOverview, error) {
 		overview.PrimaryDevice = overview.Services[0].Device
 	}
 	overview.InternetReach = overview.Connected && overview.DefaultGateway != ""
+	overview.Capabilities = detectNetworkCapabilities()
+	if overview.Backend == "ip" && overview.Capabilities.Backend != "ip" {
+		overview.Backend = overview.Capabilities.Backend
+	}
 
 	sort.Slice(overview.Services, func(i, j int) bool {
 		return serviceRank(overview.Services[i]) < serviceRank(overview.Services[j])
@@ -144,22 +149,39 @@ func (s *NetworkServiceCore) GetDetail(device string) (NetworkDetail, error) {
 }
 
 func (s *NetworkServiceCore) SetDeviceEnabled(device string, enabled bool) error {
-	if !hasCmd("nmcli") {
-		return fmt.Errorf("需要 NetworkManager (nmcli)")
-	}
-	if enabled {
-		_, err := runCmd("nmcli", "device", "connect", device)
+	if hasCmd("nmcli") {
+		if enabled {
+			_, err := runCmd("nmcli", "device", "connect", device)
+			return err
+		}
+		_, err := runCmd("nmcli", "device", "disconnect", device)
 		return err
 	}
-	_, err := runCmd("nmcli", "device", "disconnect", device)
-	return err
+	if hasCmd("ip") {
+		state := "down"
+		if enabled {
+			state = "up"
+		}
+		_, err := runCmd("ip", "link", "set", device, state)
+		return err
+	}
+	return fmt.Errorf("无法管理网络接口")
 }
 
 func (s *NetworkServiceCore) SetIPv4(device string, req SetIPv4Request) error {
-	if !hasCmd("nmcli") {
-		return fmt.Errorf("需要 NetworkManager (nmcli)")
+	if hasCmd("nmcli") {
+		return s.setIPv4NMCLI(device, req)
 	}
+	if fileExists("/etc/network/interfaces") && hasCmd("ifup") && hasCmd("ifdown") {
+		return s.setIPv4Ifupdown(device, req)
+	}
+	if hasCmd("ip") {
+		return s.setIPv4IP(device, req)
+	}
+	return fmt.Errorf("无法配置 IPv4")
+}
 
+func (s *NetworkServiceCore) setIPv4NMCLI(device string, req SetIPv4Request) error {
 	conn, err := s.activeConnection(device)
 	if err != nil {
 		return err
@@ -198,7 +220,7 @@ func (s *NetworkServiceCore) SetIPv4(device string, req SetIPv4Request) error {
 
 func (s *NetworkServiceCore) ScanWiFi(device string) ([]WiFiNetwork, error) {
 	if !hasCmd("nmcli") {
-		return nil, fmt.Errorf("需要 NetworkManager (nmcli)")
+		return []WiFiNetwork{}, nil
 	}
 	if device == "" {
 		device = s.firstWiFiDevice()
@@ -248,7 +270,7 @@ func (s *NetworkServiceCore) ScanWiFi(device string) ([]WiFiNetwork, error) {
 
 func (s *NetworkServiceCore) ConnectWiFi(device string, req ConnectWiFiRequest) error {
 	if !hasCmd("nmcli") {
-		return fmt.Errorf("需要 NetworkManager (nmcli)")
+		return fmt.Errorf("Wi-Fi 需要安装 NetworkManager：apt install network-manager")
 	}
 	if device == "" {
 		device = s.firstWiFiDevice()
@@ -428,8 +450,14 @@ func (s *NetworkServiceCore) ipDeviceDetail(device string) (NetworkDetail, error
 			MTU:        1500,
 		}
 		detail.Gateway = defaultGateway()
+		detail.DNS = readResolvConf()
 		if len(detail.Addresses) > 0 {
 			detail.SubnetMask = cidrToMask(detail.Addresses[0])
+		}
+		if fileExists("/etc/network/interfaces") {
+			if method := interfacesIPv4Method(device); method != "" {
+				detail.IPv4Method = method
+			}
 		}
 		return detail, nil
 	}

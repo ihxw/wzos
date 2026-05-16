@@ -13,7 +13,7 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { FileService, FileInfo } from '../../core/services/file.service';
-import { MediaViewerComponent, MediaFile } from '../media-viewer/media-viewer';
+import { FileOpenService } from '../../core/services/file-open.service';
 import { WindowManagerService } from '../../core/services/window-manager.service';
 import { Subject, debounceTime, distinctUntilChanged, Subscription } from 'rxjs';
 
@@ -42,6 +42,8 @@ const TAG_COLORS: Record<string, string> = {
 })
 export class FileManagerComponent implements OnInit, OnDestroy {
   @Input() windowId = '';
+  @Input() initialPath = '';
+  @Input() selectPath = '';
   currentPath = '';
   files: FileInfo[] = [];
   selectedFiles: Set<string> = new Set();
@@ -104,6 +106,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   // Recent items
   recentItems: FileInfo[] = [];
 
+  diskFree = '';
+  diskTotal = '';
+
   // Subscriptions
   private subs: Subscription[] = [];
 
@@ -111,6 +116,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   constructor(
     private fileService: FileService,
+    private fileOpen: FileOpenService,
     private nzContextMenuService: NzContextMenuService,
     private message: NzMessageService,
     private http: HttpClient,
@@ -118,10 +124,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Determine the best default path
-    const defaultPath = '/';
+    const defaultPath = this.initialPath?.trim() || '/';
     this.locations[1].path = this.detectHomeDir();
-    this.navigateTo(defaultPath, true);
+    this.navigateTo(defaultPath, true, this.selectPath || undefined);
     this.loadFavorites();
     this.loadTags();
     this.loadRecent();
@@ -134,6 +139,32 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       }
     });
     this.subs.push(this.searchSub);
+
+    const navSub = this.fileOpen.navigateRequest$.subscribe(req => {
+      if (req.path) {
+        this.navigateTo(req.path, true, req.selectPath);
+      }
+    });
+    this.subs.push(navSub);
+
+    const menuSub = this.windowManager.menuAction$.subscribe(({ action, windowId }) => {
+      if (windowId !== this.windowId) return;
+      switch (action) {
+        case 'file-new-folder':
+          this.createNew(true);
+          break;
+        case 'file-open':
+          if (this.selectedFile) this.open(this.selectedFile);
+          break;
+        case 'file-get-info':
+          this.getInfo();
+          break;
+        case 'file-close':
+          this.windowManager.closeWindow(this.windowId);
+          break;
+      }
+    });
+    this.subs.push(menuSub);
   }
 
   ngOnDestroy(): void {
@@ -151,7 +182,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   // ===== Navigation =====
-  navigateTo(path: string, recordHistory = true): void {
+  navigateTo(path: string, recordHistory = true, selectPath?: string): void {
     if (!path) return;
     path = path.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
 
@@ -169,6 +200,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
         const sorted = this.sortFiles(data || []);
         this.files = sorted;
         this.loading = false;
+        if (selectPath) {
+          this.selectedFiles.add(selectPath);
+        }
+        this.refreshDiskUsage(path);
 
         if (this.pendingSelectAndRenamePath) {
           const targetPath = this.pendingSelectAndRenamePath;
@@ -230,54 +265,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     this.addToRecent(file);
     if (file.isDir) {
       this.navigateTo(file.path);
-    } else if (this.isMediaFile(file)) {
-      this.openMediaViewer(file);
-    } else {
-      this.downloadFile(file);
+      return;
     }
-  }
-
-  isMediaFile(file: FileInfo): boolean {
-    return this.getMediaType(file) !== null;
-  }
-
-  getMediaType(file: FileInfo): 'image' | 'audio' | 'video' | null {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff'];
-    const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'wma', 'm4a', 'opus'];
-    const videoExts = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'm4v'];
-    if (imageExts.includes(ext || '')) return 'image';
-    if (audioExts.includes(ext || '')) return 'audio';
-    if (videoExts.includes(ext || '')) return 'video';
-    return null;
-  }
-
-  openMediaViewer(file: FileInfo): void {
-    const type = this.getMediaType(file);
-    if (!type) return;
-
-    // Build list of media files in current directory
-    const mediaFiles: MediaFile[] = this.files
-      .filter(f => !f.isDir && this.isMediaFile(f))
-      .map(f => ({ name: f.name, path: f.path, type: this.getMediaType(f)!, fileType: f.name.split('.').pop() }));
-
-    const idx = mediaFiles.findIndex(f => f.path === file.path);
-
-    // Open as standalone app window
-    this.windowManager.openWindow(
-      'image-viewer',
-      file.name,
-      MediaViewerComponent,
-      {
-        size: { width: 900, height: 640 },
-        position: { x: 120, y: 80 },
-        inputs: {
-          files: mediaFiles,
-          currentIndex: idx >= 0 ? idx : 0,
-          windowTitle: file.name
-        }
-      }
-    );
+    this.fileOpen.open(file, { siblingFiles: this.files });
   }
 
   goUp(): void {
@@ -1160,6 +1150,19 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   closeGetInfo(): void {
     this.showGetInfo = false;
     this.getInfoFile = null;
+  }
+
+  private refreshDiskUsage(path: string): void {
+    this.fileService.getDiskUsage(path || '/').subscribe({
+      next: u => {
+        this.diskFree = this.formatBytes(u.free);
+        this.diskTotal = this.formatBytes(u.total);
+      },
+      error: () => {
+        this.diskFree = '';
+        this.diskTotal = '';
+      },
+    });
   }
 
   // ===== Duplicate =====

@@ -1,0 +1,243 @@
+.general-pane {
+  max-width: 560px;
+  padding: 18px 24px 40px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+}
+
+.general-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  margin: 0 0 16px;
+  color: var(--wzos-text-primary);
+}
+
+.general-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--wzos-text-secondary);
+  background: var(--wzos-bg-card);
+  border: 1px solid var(--wzos-border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.general-loading {
+  font-size: 13px;
+  color: var(--wzos-text-tertiary);
+  padding: 24px 0;
+}
+
+.general-error {
+  font-size: 13px;
+  color: #ff3b30;
+  margin-bottom: 8px;
+}
+
+.general-message {
+  font-size: 13px;
+  color: #34c759;
+  margin-bottom: 12px;
+}
+
+.general-retry {
+  border: none;
+  background: none;
+  color: var(--wzos-accent-color);
+  font-size: 13px;
+  cursor: default;
+  padding: 0;
+  margin-bottom: 16px;
+  font-family: inherit;
+}
+
+.general-section {
+  margin-bottom: 22px;
+}
+
+.section-caption {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wzos-text-secondary);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+
+.general-card {
+  background: var(--wzos-bg-card);
+  border: 1px solid var(--wzos-border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--wzos-border-subtle);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &.static-row {
+    justify-content: space-between;
+  }
+
+  &.toggle-row {
+    justify-content: space-between;
+  }
+}
+
+.row-label {
+  font-size: 13px;
+  color: var(--wzos-text-primary);
+  flex-shrink: 0;
+  min-width: 72px;
+
+  &.block {
+    display: block;
+    min-width: 0;
+  }
+}
+
+.row-sublabel {
+  display: block;
+  font-size: 11px;
+  color: var(--wzos-text-tertiary);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.row-value {
+  font-size: 13px;
+  color: var(--wzos-text-secondary);
+
+  &.mono {
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+}
+
+.toggle-text {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.card-hint {
+  margin: 0;
+  padding: 0 14px 10px;
+  font-size: 11px;
+  color: var(--wzos-text-tertiary);
+  line-height: 1.4;
+}
+
+.macos-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--wzos-border-strong);
+  border-radius: 6px;
+  background: var(--wzos-bg-window);
+  color: var(--wzos-text-primary);
+  outline: none;
+
+  &:focus {
+    border-color: var(--wzos-accent-color);
+    box-shadow: 0 0 0 3px var(--wzos-accent-color-light);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.macos-select {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--wzos-border-strong);
+  border-radius: 6px;
+  background: var(--wzos-bg-window);
+  color: var(--wzos-text-primary);
+  outline: none;
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.macos-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: default;
+  background: var(--wzos-bg-segmented);
+  color: var(--wzos-text-primary);
+  flex-shrink: 0;
+
+  &.primary {
+    background: var(--wzos-accent-color);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.macos-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--wzos-border-strong);
+    border-radius: 11px;
+    transition: background 0.2s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 1.5px;
+      left: 1.5px;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+    }
+  }
+
+  input:checked + .toggle-slider {
+    background: var(--wzos-accent-color);
+  }
+
+  input:checked + .toggle-slider::after {
+    transform: translateX(18px);
+  }
+
+  input:disabled + .toggle-slider {
+    opacity: 0.5;
+  }
+}

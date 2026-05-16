@@ -95,14 +95,16 @@ func ListFiles(dirPath string) ([]models.FileInfo, error) {
 			continue
 		}
 
-		files = append(files, models.FileInfo{
+		fi := models.FileInfo{
 			Name:        entry.Name(),
 			Path:        filePath,
 			IsDir:       entry.IsDir(),
 			Size:        info.Size(),
 			ModTime:     info.ModTime(),
 			Permissions: info.Mode().String(),
-		})
+		}
+		FillFileAttrs(&fi)
+		files = append(files, fi)
 	}
 	return files, nil
 }
@@ -293,14 +295,16 @@ func SearchFiles(root, query string, limit int) ([]models.FileInfo, error) {
 		}
 
 		if strings.Contains(strings.ToLower(info.Name()), query) {
-			results = append(results, models.FileInfo{
+			fi := models.FileInfo{
 				Name:        info.Name(),
 				Path:        path,
 				IsDir:       info.IsDir(),
 				Size:        info.Size(),
 				ModTime:     info.ModTime(),
 				Permissions: info.Mode().String(),
-			})
+			}
+			FillFileAttrs(&fi)
+			results = append(results, fi)
 		}
 		return nil
 	})

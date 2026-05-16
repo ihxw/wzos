@@ -6,13 +6,15 @@ import { TopBar } from './components/top-bar/top-bar';
 import { Dock } from './components/dock/dock';
 import { DesktopFileComponent } from './components/desktop-file/desktop-file';
 import { DesktopApp } from './core/models/app.model';
-import { FileInfo } from './core/services/file.service';
+import { FileInfo, FileService } from './core/services/file.service';
 import { TerminalComponent } from './components/terminal/terminal';
 import { FileManagerComponent } from './components/file-manager/file-manager';
 import { MediaViewerComponent } from './components/media-viewer/media-viewer';
+import { FileOpenService } from './core/services/file-open.service';
 import { SystemSettingsComponent } from './apps/system-settings/system-settings';
 import { AppManagerComponent } from './apps/app-manager/app-manager';
 import { FirewallComponent } from './apps/firewall/firewall';
+import { TextEditorComponent } from './components/text-editor/text-editor';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -95,11 +97,16 @@ export class App implements OnInit {
   quickLookFile: FileInfo | null = null;
   pendingSelectDesktopPath: string | null = null;
   desktopRenamingPath: string | null = null;
+  desktopContextFile: FileInfo | null = null;
+  showDesktopGetInfo = false;
+  desktopGetInfoFile: FileInfo | null = null;
   private readonly dockSizeStorageKey = 'wzos-dock-icon-size';
+  private readonly desktopPosStorageKey = 'wzos-desktop-positions';
 
   apps: DesktopApp[] = [
     { id: 'file-manager', name: 'Files', icon: '/icon_files.png' },
     { id: 'image-viewer', name: '图片预览', icon: '/icon_preview.svg' },
+    { id: 'text-editor', name: '文本编辑', icon: '/icon_editor.svg' },
     { id: 'terminal', name: 'Terminal', icon: '/icon_terminal.png' },
     { id: 'system-settings', name: 'System Settings', icon: '/icon_settings.png' },
     { id: 'firewall', name: 'Firewall', icon: '/icon_firewall.png' }
@@ -182,6 +189,7 @@ export class App implements OnInit {
     };
 
     const onUp = () => {
+      this.saveDesktopPositions();
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
@@ -278,7 +286,9 @@ export class App implements OnInit {
     private nzContextMenuService: NzContextMenuService,
     private windowManager: WindowManagerService,
     private authService: AuthService,
-    private http: HttpClient
+    private http: HttpClient,
+    private fileOpen: FileOpenService,
+    private fileService: FileService
   ) {}
 
   ngOnInit() {
@@ -326,6 +336,19 @@ export class App implements OnInit {
     window.addEventListener('wzos-launch-app', ((e: CustomEvent) => {
       this.openApp(e.detail);
     }) as EventListener);
+
+    window.addEventListener('wzos-spotlight', () => {
+      this.openApp(this.apps[0]);
+    });
+
+    window.addEventListener('wzos-shell-menu', ((e: CustomEvent<string>) => {
+      if (e.detail === 'about' || e.detail === 'settings') {
+        const app = this.apps.find(a => a.id === 'system-settings');
+        if (app) this.openApp(app);
+      }
+    }) as EventListener);
+
+    this.loadDesktopPositions();
   }
 
   onLoginSuccess(): void {
@@ -337,6 +360,7 @@ export class App implements OnInit {
       'terminal': TerminalComponent,
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
+      'text-editor': TextEditorComponent,
       'system-settings': SystemSettingsComponent,
       'app-manager': AppManagerComponent,
       'firewall': FirewallComponent
@@ -424,7 +448,79 @@ export class App implements OnInit {
         next: () => this.loadDesktopFiles(),
         error: (err) => alert('创建失败: ' + (err.error?.error || err.message))
       });
+    } else if (action === 'Get Info') {
+      const target = this.getPrimaryDesktopSelection();
+      if (target) this.showDesktopGetInfoFor(target);
     }
+  }
+
+  onDesktopFileContextMenu(data: { file: FileInfo; event: MouseEvent }, menu: NzDropdownMenuComponent): void {
+    data.event.preventDefault();
+    data.event.stopPropagation();
+    if (!this.selectedDesktopFiles.has(data.file.path)) {
+      this.selectedDesktopFiles = new Set([data.file.path]);
+    }
+    this.desktopContextFile = data.file;
+    this.nzContextMenuService.create(data.event, menu);
+  }
+
+  handleDesktopFileMenuAction(action: string): void {
+    this.nzContextMenuService.close();
+    const file = this.desktopContextFile;
+    if (!file) return;
+    switch (action) {
+      case 'open':
+        this.openDesktopFile(file);
+        break;
+      case 'get-info':
+        this.showDesktopGetInfoFor(file);
+        break;
+      case 'rename':
+        this.desktopRenamingPath = file.path;
+        break;
+      case 'trash':
+        this.fileService.trashMove(file.path).subscribe({
+          next: () => this.loadDesktopFiles(),
+          error: err => alert(err.error?.error || '移入废纸篓失败'),
+        });
+        break;
+    }
+    this.desktopContextFile = null;
+  }
+
+  showDesktopGetInfoFor(file: FileInfo): void {
+    this.desktopGetInfoFile = file;
+    this.showDesktopGetInfo = true;
+  }
+
+  closeDesktopGetInfo(): void {
+    this.showDesktopGetInfo = false;
+    this.desktopGetInfoFile = null;
+  }
+
+  getPrimaryDesktopSelection(): FileInfo | null {
+    if (this.selectedDesktopFiles.size !== 1) return null;
+    const path = Array.from(this.selectedDesktopFiles)[0];
+    return this.desktopFiles.find(f => f.path === path) ?? null;
+  }
+
+  private loadDesktopPositions(): void {
+    try {
+      const raw = localStorage.getItem(this.desktopPosStorageKey);
+      if (raw) this.desktopFilePositions = JSON.parse(raw);
+    } catch { /* ignore */ }
+  }
+
+  private saveDesktopPositions(): void {
+    localStorage.setItem(this.desktopPosStorageKey, JSON.stringify(this.desktopFilePositions));
+  }
+
+  formatDesktopBytes(bytes: number): string {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   private loadDockIconSize(): number {
@@ -477,6 +573,7 @@ export class App implements OnInit {
       'terminal': TerminalComponent,
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
+      'text-editor': TextEditorComponent,
       'system-settings': SystemSettingsComponent,
       'app-manager': AppManagerComponent,
       'firewall': FirewallComponent
@@ -665,12 +762,12 @@ export class App implements OnInit {
         next: (data) => {
           if (data != null && Array.isArray(data)) {
             this.desktopPath = path;
-            this.desktopFiles = (data as any[])
-              .filter((f: any) => f != null)
-              .sort((a: any, b: any) => {
+            this.desktopFiles = (data as FileInfo[])
+              .filter((f): f is FileInfo => f != null)
+              .sort((a, b) => {
                 if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
                 return a.name.localeCompare(b.name);
-              });
+              }) as FileInfo[];
             // Assign default positions for new files
             let col = 0, row = 0;
             for (const f of this.desktopFiles) {
@@ -701,55 +798,7 @@ export class App implements OnInit {
   }
 
   openDesktopFile(file: FileInfo): void {
-    if (file.isDir) {
-      // Open directory in file manager
-      this.windowManager.openWindow('file-manager', file.name, FileManagerComponent);
-    } else if (this.isMediaFile(file)) {
-      // Open media in viewer
-      const type = this.getDesktopMediaType(file);
-      const mediaFiles = this.desktopFiles
-        .filter(f => !f.isDir && this.isMediaFile(f))
-        .map(f => ({ name: f.name, path: f.path, type: this.getDesktopMediaType(f)!, fileType: f.name.split('.').pop() }));
-      const idx = mediaFiles.findIndex(f => f.path === file.path);
-      this.windowManager.openWindow(
-        'image-viewer',
-        file.name,
-        MediaViewerComponent,
-        {
-          size: { width: 900, height: 640 },
-          position: { x: 120, y: 80 },
-          inputs: {
-            files: mediaFiles,
-            currentIndex: idx >= 0 ? idx : 0,
-            windowTitle: file.name
-          }
-        }
-      );
-    } else {
-      // Download other file types
-      const link = document.createElement('a');
-      link.href = '/api/files/download?path=' + encodeURIComponent(file.path);
-      link.download = file.name;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  }
-
-  isMediaFile(file: FileInfo): boolean {
-    return this.getDesktopMediaType(file) !== null;
-  }
-
-  getDesktopMediaType(file: FileInfo): 'image' | 'audio' | 'video' | null {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff'];
-    const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'aac', 'wma', 'm4a', 'opus'];
-    const videoExts = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv', 'm4v'];
-    if (imageExts.includes(ext || '')) return 'image';
-    if (audioExts.includes(ext || '')) return 'audio';
-    if (videoExts.includes(ext || '')) return 'video';
-    return null;
+    this.fileOpen.open(file, { siblingFiles: this.desktopFiles });
   }
 
   cancelDesktopRename(): void {

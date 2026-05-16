@@ -1,0 +1,28 @@
+<div class="services-pane">
+  <h2 class="services-title">服务管理</h2>
+  <input class="services-search" type="search" placeholder="搜索服务…" [(ngModel)]="filter" />
+
+  <div class="services-loading" *ngIf="loading">正在加载…</div>
+  <div class="services-error" *ngIf="error">{{ error }}</div>
+  <button type="button" class="services-retry" *ngIf="error" (click)="load()">重试</button>
+
+  <div class="services-list" *ngIf="!loading && !error">
+    <div class="service-row" *ngFor="let svc of filtered">
+      <div class="service-main">
+        <span class="service-name">{{ svc.name }}</span>
+        <span class="service-desc">{{ svc.description || '—' }}</span>
+      </div>
+      <div class="service-toggles">
+        <label class="toggle-pill" title="运行中">
+          <input type="checkbox" [checked]="svc.active" [disabled]="saving" (change)="toggleActive(svc)">
+          <span>运行</span>
+        </label>
+        <label class="toggle-pill" title="开机启用">
+          <input type="checkbox" [checked]="svc.enabled" [disabled]="saving" (change)="toggleEnabled(svc)">
+          <span>启用</span>
+        </label>
+      </div>
+    </div>
+    <p class="services-empty" *ngIf="filtered.length === 0">没有匹配的服务</p>
+  </div>
+</div>

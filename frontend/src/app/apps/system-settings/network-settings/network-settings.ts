@@ -3,6 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 
+export interface NetworkCapabilities {
+  backend: string;
+  canToggle: boolean;
+  canSetIPv4: boolean;
+  canWiFi: boolean;
+  readOnly: boolean;
+  hint: string;
+}
+
 export interface NetworkOverview {
   connected: boolean;
   internetReach: boolean;
@@ -11,6 +20,7 @@ export interface NetworkOverview {
   defaultGateway: string;
   services: NetworkServiceItem[];
   backend: string;
+  capabilities: NetworkCapabilities;
 }
 
 export interface NetworkServiceItem {
@@ -87,6 +97,22 @@ export class NetworkSettingsComponent implements OnInit {
     this.loadOverview();
   }
 
+  get caps(): NetworkCapabilities | null {
+    return this.overview?.capabilities ?? null;
+  }
+
+  get canToggle(): boolean {
+    return this.caps?.canToggle ?? false;
+  }
+
+  get canSetIPv4(): boolean {
+    return this.caps?.canSetIPv4 ?? false;
+  }
+
+  get canWiFi(): boolean {
+    return this.caps?.canWiFi ?? false;
+  }
+
   get statusText(): string {
     if (!this.overview) return '';
     if (this.overview.connected && this.overview.internetReach) {
@@ -120,7 +146,7 @@ export class NetworkSettingsComponent implements OnInit {
     this.detail = null;
     this.detailError = '';
     this.loadDetail(svc.device);
-    if (svc.kind === 'wifi') {
+    if (svc.kind === 'wifi' && this.canWiFi) {
       this.scanWiFi(svc.device);
     }
   }
@@ -156,7 +182,8 @@ export class NetworkSettingsComponent implements OnInit {
   }
 
   isConnected(svc: NetworkServiceItem): boolean {
-    return svc.state.includes('connected');
+    const s = svc.state.toLowerCase();
+    return s.includes('connected') || s === 'up';
   }
 
   serviceSubtitle(svc: NetworkServiceItem): string {
@@ -171,8 +198,9 @@ export class NetworkSettingsComponent implements OnInit {
   }
 
   toggleService(enabled: boolean): void {
-    if (!this.selected) return;
+    if (!this.selected || !this.canToggle) return;
     this.saving = true;
+    this.detailError = '';
     this.http.post(`/api/network/device/${encodeURIComponent(this.selected.device)}/enabled`, { enabled }).subscribe({
       next: () => {
         this.saving = false;
@@ -187,8 +215,9 @@ export class NetworkSettingsComponent implements OnInit {
   }
 
   saveIPv4(): void {
-    if (!this.selected) return;
+    if (!this.selected || !this.canSetIPv4) return;
     this.saving = true;
+    this.detailError = '';
     const body =
       this.ipv4Mode === 'auto'
         ? { method: 'auto' }

@@ -101,7 +101,15 @@
           height: 22px;
           border-radius: 4px;
           flex-shrink: 0;
-          color: white;
+          color: var(--wzos-icon-on-tile, #fff);
+
+          svg {
+            color: inherit;
+          }
+
+          &--about {
+            background: #007aff !important;
+          }
         }
 
         .menu-label {

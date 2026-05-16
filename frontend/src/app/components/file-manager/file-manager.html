@@ -242,20 +242,20 @@
 
       <!-- Error state -->
       <div class="empty-state error-state" *ngIf="!loading && errorMessage">
-        <i nz-icon nzType="warning" style="font-size: 48px; color: #ff9500;"></i>
+        <i nz-icon nzType="warning" class="empty-state-icon empty-state-icon--warn"></i>
         <p>{{ errorMessage }}</p>
         <button nz-button nzType="primary" (click)="goBack()" *ngIf="canGoBack()">返回上层</button>
       </div>
 
       <!-- Permission denied / empty state -->
       <div class="empty-state" *ngIf="!loading && !errorMessage && filteredFiles.length === 0 && !searchQuery">
-        <i nz-icon nzType="folder-open" style="font-size: 48px; color: #c7c7cc;"></i>
+        <i nz-icon nzType="folder-open" class="empty-state-icon"></i>
         <p>此文件夹为空</p>
       </div>
 
       <!-- No search results -->
       <div class="empty-state" *ngIf="!loading && !errorMessage && filteredFiles.length === 0 && searchQuery">
-        <i nz-icon nzType="search" style="font-size: 48px; color: #c7c7cc;"></i>
+        <i nz-icon nzType="search" class="empty-state-icon"></i>
         <p>未找到 "{{ searchQuery }}"</p>
       </div>
 
@@ -443,7 +443,7 @@
           </div>
         </div>
         <div class="empty-state" *ngIf="trashItems.length === 0">
-          <i nz-icon nzType="delete" style="font-size:48px;color:#c7c7cc"></i>
+          <i nz-icon nzType="delete" class="empty-state-icon"></i>
           <p>废纸篓为空</p>
         </div>
         <nz-table *ngIf="trashItems.length > 0" [nzData]="trashItems" nzSize="small" [nzFrontPagination]="false" [nzShowPagination]="false">
@@ -576,7 +576,8 @@
         </ng-template>
       </span>
       <span class="status-right" *ngIf="currentPath && !showTrash">
-        {{ currentPath }}
+        <span *ngIf="diskFree" class="status-disk">{{ diskFree }} 可用，共 {{ diskTotal }}</span>
+        <span class="status-path">{{ currentPath }}</span>
       </span>
     </footer>
   </div>

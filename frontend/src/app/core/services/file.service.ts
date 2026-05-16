@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export type FileKind = 'directory' | 'text' | 'media' | 'pdf' | 'archive' | 'unknown';
+export type FileOpenWith = 'file-manager' | 'text-editor' | 'media-viewer' | 'browser' | 'reveal';
+export type FileMediaType = 'image' | 'audio' | 'video';
+
 export interface FileInfo {
   name: string;
   path: string;
@@ -9,6 +13,14 @@ export interface FileInfo {
   size: number;
   modTime: string;
   permissions: string;
+  /** From API — preferred for open-app routing */
+  kind?: FileKind;
+  openWith?: FileOpenWith;
+  mimeType?: string;
+  extension?: string;
+  mediaType?: FileMediaType;
+  /** Monaco language id */
+  language?: string;
 }
 
 @Injectable({
@@ -88,5 +100,21 @@ export class FileService {
   }
   addRecent(file: FileInfo): Observable<any> {
     return this.http.post(`${this.apiUrl}/recent/add`, file);
+  }
+
+  readContent(path: string): Observable<{ path: string; content: string; size: number }> {
+    return this.http.get<{ path: string; content: string; size: number }>(
+      `${this.apiUrl}/content?path=${encodeURIComponent(path)}`
+    );
+  }
+
+  writeContent(path: string, content: string): Observable<{ success: boolean }> {
+    return this.http.put<{ success: boolean }>(`${this.apiUrl}/content`, { path, content });
+  }
+
+  getDiskUsage(path: string): Observable<{ total: number; used: number; free: number }> {
+    return this.http.get<{ total: number; used: number; free: number }>(
+      `${this.apiUrl}/diskusage?path=${encodeURIComponent(path)}`
+    );
   }
 }

@@ -18,7 +18,7 @@ interface FirewallStatus {
     <div class="firewall-app">
       <header class="fw-header">
         <div class="fw-icon">
-          <svg viewBox="0 0 24 24" width="48" height="48" fill="#ff9500">
+          <svg class="wzos-tile-icon" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
             <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
           </svg>
         </div>
@@ -68,6 +68,17 @@ interface FirewallStatus {
       align-items: center;
       gap: 16px;
       margin-bottom: 24px;
+    }
+    .fw-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #ffb340 0%, #ff9500 100%);
+      color: #fff;
+      flex-shrink: 0;
     }
     .fw-title h1 {
       margin: 0;

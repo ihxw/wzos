@@ -15,11 +15,14 @@ func SetupRoutes(r *gin.Engine) {
 	systemInfoService := core.NewSystemInfoService()
 	firewallService := core.NewFirewallService()
 	networkService := core.NewNetworkService()
+	generalService := core.NewGeneralService()
 
 	authHandler := api.NewAuthHandler(authService)
 	systemInfoHandler := api.NewSystemInfoHandler(systemInfoService)
 	firewallHandler := api.NewFirewallHandler(firewallService)
 	networkHandler := api.NewNetworkHandler(networkService)
+	generalHandler := api.NewGeneralHandler(generalService)
+	servicesHandler := api.NewServicesHandler()
 
 	r.POST("/api/login", authHandler.Login)
 
@@ -40,6 +43,17 @@ func SetupRoutes(r *gin.Engine) {
 		auth.PUT("/network/device/:device/ipv4", networkHandler.SetIPv4)
 		auth.GET("/network/wifi/scan", networkHandler.ScanWiFi)
 		auth.POST("/network/wifi/:device/connect", networkHandler.ConnectWiFi)
+
+		auth.GET("/general/settings", generalHandler.GetSettings)
+		auth.PUT("/general/hostname", generalHandler.SetHostname)
+		auth.PUT("/general/timezone", generalHandler.SetTimezone)
+		auth.PUT("/general/ntp", generalHandler.SetNTP)
+		auth.PUT("/general/locale", generalHandler.SetLocale)
+		auth.PUT("/general/wzos-service", generalHandler.SetWZOSService)
+
+		auth.GET("/system/services", servicesHandler.List)
+		auth.PUT("/system/services/enabled", servicesHandler.SetEnabled)
+		auth.PUT("/system/services/active", servicesHandler.SetActive)
 	}
 
 	ws.RegisterTerminalRoute(r)

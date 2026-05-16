@@ -1,0 +1,104 @@
+.services-pane {
+  max-width: 560px;
+  padding: 18px 24px 40px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+}
+
+.services-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--wzos-text-primary);
+}
+
+.services-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--wzos-border-strong);
+  background: var(--wzos-bg-window);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.services-list {
+  background: var(--wzos-bg-card);
+  border: 1px solid var(--wzos-border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--wzos-border-subtle);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.service-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wzos-text-primary);
+}
+
+.service-desc {
+  display: block;
+  font-size: 11px;
+  color: var(--wzos-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-toggles {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toggle-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--wzos-text-secondary);
+  cursor: default;
+}
+
+.services-loading,
+.services-error,
+.services-empty {
+  font-size: 13px;
+  color: var(--wzos-text-tertiary);
+  padding: 12px 0;
+}
+
+.services-error {
+  color: #ff3b30;
+}
+
+.services-retry {
+  border: none;
+  background: none;
+  color: var(--wzos-accent-color);
+  font-size: 13px;
+  cursor: default;
+  padding: 0;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
