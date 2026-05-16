@@ -14,10 +14,12 @@ func SetupRoutes(r *gin.Engine) {
 	authService := core.NewAuthService(db.DB)
 	systemInfoService := core.NewSystemInfoService()
 	firewallService := core.NewFirewallService()
+	networkService := core.NewNetworkService()
 
 	authHandler := api.NewAuthHandler(authService)
 	systemInfoHandler := api.NewSystemInfoHandler(systemInfoService)
 	firewallHandler := api.NewFirewallHandler(firewallService)
+	networkHandler := api.NewNetworkHandler(networkService)
 
 	r.POST("/api/login", authHandler.Login)
 
@@ -31,6 +33,13 @@ func SetupRoutes(r *gin.Engine) {
 		auth.GET("/sysinfo/overview", systemInfoHandler.GetOverview)
 		auth.GET("/firewall/status", firewallHandler.GetStatus)
 		auth.POST("/firewall/enable", firewallHandler.SetEnabled)
+
+		auth.GET("/network/overview", networkHandler.GetOverview)
+		auth.GET("/network/device/:device", networkHandler.GetDetail)
+		auth.POST("/network/device/:device/enabled", networkHandler.SetEnabled)
+		auth.PUT("/network/device/:device/ipv4", networkHandler.SetIPv4)
+		auth.GET("/network/wifi/scan", networkHandler.ScanWiFi)
+		auth.POST("/network/wifi/:device/connect", networkHandler.ConnectWiFi)
 	}
 
 	ws.RegisterTerminalRoute(r)

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { NetworkSettingsComponent } from './network-settings/network-settings';
 
 interface SystemInfo {
   cpu_usage: number;
@@ -92,7 +93,7 @@ const DEFAULT_SETTINGS: AppearanceSettings = {
 @Component({
   selector: 'app-system-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NetworkSettingsComponent],
   templateUrl: './system-settings.html',
   styleUrls: ['./system-settings.scss']
 })

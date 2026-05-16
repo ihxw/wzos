@@ -1,0 +1,195 @@
+<div class="network-pane">
+  <!-- 列表视图 -->
+  <ng-container *ngIf="!selected">
+    <h2 class="network-title">网络</h2>
+
+    <div class="network-status" *ngIf="overview">
+      <span class="status-dot" [class.on]="overview.connected"></span>
+      <span class="status-text">{{ statusText }}</span>
+      <span class="status-host" *ngIf="overview.hostname">{{ overview.hostname }}</span>
+    </div>
+
+    <div class="network-loading" *ngIf="loading">正在加载网络服务…</div>
+    <div class="network-error" *ngIf="error">{{ error }}</div>
+    <button class="network-retry" *ngIf="error" (click)="loadOverview()">重试</button>
+
+    <div class="network-group" *ngIf="overview && !loading">
+      <div class="group-caption">网络服务</div>
+      <div class="service-list">
+        <button
+          type="button"
+          class="service-row"
+          *ngFor="let svc of overview.services"
+          (click)="openService(svc)">
+          <span class="service-icon" [attr.data-kind]="svc.kind">
+            <svg *ngIf="svc.kind === 'wifi'" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M12 3C7.95 3 4.21 4.34 1.2 6.6L3 9c2.5-1.88 5.42-3 8.5-3s6 1.12 8.5 3l1.8-2.4C19.79 4.34 16.05 3 12 3zm0 4.5c-2.73 0-5.18.94-7.15 2.5L7 12.14c1.45-1.1 3.24-1.64 5-1.64s3.55.54 5 1.64l2.15-2.14C17.18 8.44 14.73 7.5 12 7.5zM12 14c-1.1 0-2.1.36-2.93.96L12 18l2.93-3.04A3.97 3.97 0 0 0 12 14z"/>
+            </svg>
+            <svg *ngIf="svc.kind === 'ethernet'" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M7 15h2v2H7v-2zm0-4h2v2H7v-2zm4 4h2v2h-2v-2zm0-4h2v2h-2v-2zm4 4h2v2h-2v-2zm0-4h2v2h-2v-2zM3 5h18v4H3V5zm0 6h18v8H3v-8z"/>
+            </svg>
+            <svg *ngIf="svc.kind === 'other'" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+          </span>
+          <span class="service-body">
+            <span class="service-name">{{ svc.name }}</span>
+            <span class="service-sub">{{ serviceSubtitle(svc) }}</span>
+          </span>
+          <span class="service-meta">
+            <span class="conn-dot" [class.on]="isConnected(svc)"></span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="network-footer" *ngIf="overview">
+      <div class="footer-row" *ngIf="overview.defaultGateway">
+        <span class="footer-label">路由器</span>
+        <span class="footer-value">{{ overview.defaultGateway }}</span>
+      </div>
+      <div class="footer-row">
+        <span class="footer-label">管理后端</span>
+        <span class="footer-value">{{ overview.backend }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- 详情视图 -->
+  <ng-container *ngIf="selected">
+    <div class="network-detail-header">
+      <button type="button" class="back-btn" (click)="closeDetail()">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+          <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/>
+        </svg>
+        网络
+      </button>
+      <h2 class="detail-title">{{ selected.name }}</h2>
+    </div>
+
+    <div class="detail-loading" *ngIf="detailLoading">正在加载…</div>
+    <div class="network-error" *ngIf="detailError">{{ detailError }}</div>
+
+    <ng-container *ngIf="detail && !detailLoading">
+      <!-- 开关 -->
+      <div class="detail-group">
+        <div class="detail-row toggle-row">
+          <span class="row-label">{{ selected.kind === 'wifi' ? 'Wi-Fi' : '以太网' }}</span>
+          <label class="macos-toggle">
+            <input
+              type="checkbox"
+              [checked]="isConnected(selected)"
+              [disabled]="saving"
+              (change)="toggleService($any($event.target).checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Wi-Fi 网络列表 -->
+      <div class="detail-group" *ngIf="selected.kind === 'wifi'">
+        <div class="group-caption">无线局域网</div>
+        <div class="wifi-scan-hint" *ngIf="scanning">正在搜索网络…</div>
+        <div class="wifi-list">
+          <button
+            type="button"
+            class="wifi-row"
+            *ngFor="let net of wifiNetworks"
+            [class.active]="net.inUse"
+            (click)="connectWiFi(net)">
+            <span class="wifi-signal" [attr.data-bars]="wifiBars(net.signal)">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M12 3C7.95 3 4.21 4.34 1.2 6.6L3 9c2.5-1.88 5.42-3 8.5-3s6 1.12 8.5 3l1.8-2.4C19.79 4.34 16.05 3 12 3zm0 4.5c-2.73 0-5.18.94-7.15 2.5L7 12.14c1.45-1.1 3.24-1.64 5-1.64s3.55.54 5 1.64l2.15-2.14C17.18 8.44 14.73 7.5 12 7.5zM12 14c-1.1 0-2.1.36-2.93.96L12 18l2.93-3.04A3.97 3.97 0 0 0 12 14z"/>
+              </svg>
+            </span>
+            <span class="wifi-ssid">{{ net.ssid }}</span>
+            <span class="wifi-lock" *ngIf="net.security && net.security !== '--'">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </span>
+            <span class="wifi-check" *ngIf="net.inUse">✓</span>
+          </button>
+        </div>
+        <div class="wifi-password" *ngIf="showWiFiPicker || selectedSSID">
+          <input
+            type="password"
+            class="macos-input"
+            placeholder="输入密码"
+            [(ngModel)]="wifiPassword"
+            (keyup.enter)="doConnectWiFi(selectedSSID)">
+          <button type="button" class="macos-btn primary" [disabled]="saving" (click)="doConnectWiFi(selectedSSID)">
+            加入
+          </button>
+        </div>
+        <button type="button" class="link-btn" (click)="scanWiFi(selected.device)" [disabled]="scanning">
+          重新搜索
+        </button>
+      </div>
+
+      <!-- TCP/IP -->
+      <div class="detail-group">
+        <div class="group-caption">TCP/IP</div>
+        <div class="detail-card">
+          <div class="detail-row selectable" (click)="ipv4Mode = 'auto'">
+            <span class="radio-circle" [class.checked]="ipv4Mode === 'auto'"></span>
+            <span class="row-label">使用 DHCP</span>
+          </div>
+          <div class="detail-row selectable" (click)="ipv4Mode = 'manual'">
+            <span class="radio-circle" [class.checked]="ipv4Mode === 'manual'"></span>
+            <span class="row-label">手动配置</span>
+          </div>
+
+          <ng-container *ngIf="ipv4Mode === 'manual'">
+            <div class="field-row">
+              <label>IP 地址</label>
+              <input class="macos-input" [(ngModel)]="staticIP" placeholder="192.168.1.100">
+            </div>
+            <div class="field-row">
+              <label>子网掩码</label>
+              <input class="macos-input" type="number" min="1" max="32" [(ngModel)]="staticPrefix" placeholder="24">
+            </div>
+            <div class="field-row">
+              <label>路由器</label>
+              <input class="macos-input" [(ngModel)]="staticGateway" placeholder="192.168.1.1">
+            </div>
+            <div class="field-row">
+              <label>DNS 服务器</label>
+              <input class="macos-input" [(ngModel)]="staticDNS" placeholder="8.8.8.8, 8.8.4.4">
+            </div>
+          </ng-container>
+
+          <div class="detail-actions">
+            <button type="button" class="macos-btn primary" [disabled]="saving" (click)="saveIPv4()">
+              {{ saving ? '正在应用…' : '应用' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详细信息 -->
+      <div class="detail-group">
+        <button type="button" class="details-toggle" (click)="showDetails = !showDetails">
+          <span>详细信息…</span>
+          <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12" [class.open]="showDetails">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+          </svg>
+        </button>
+        <div class="detail-card info-card" *ngIf="showDetails">
+          <div class="info-row"><span>IP 地址</span><span>{{ primaryAddress(detail) }}</span></div>
+          <div class="info-row" *ngIf="detail.subnetMask"><span>子网掩码</span><span>{{ detail.subnetMask }}</span></div>
+          <div class="info-row"><span>路由器</span><span>{{ detail.gateway || '—' }}</span></div>
+          <div class="info-row" *ngFor="let d of detail.dns; let i = index">
+            <span>{{ i === 0 ? 'DNS 服务器' : '' }}</span><span>{{ d }}</span>
+          </div>
+          <div class="info-row" *ngIf="detail.searchDomain"><span>搜索域</span><span>{{ detail.searchDomain }}</span></div>
+          <div class="info-row"><span>MAC 地址</span><span class="mono">{{ detail.mac || '—' }}</span></div>
+          <div class="info-row"><span>MTU</span><span>{{ detail.mtu }}</span></div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+</div>
