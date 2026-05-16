@@ -1,0 +1,60 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- IDE / editors ---
+.idea/
+*.iml
+.vscode/
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# --- Secrets & local config ---
+.env
+.env.*
+!.env.example
+wzos.deploy.json
+*.pem
+*.key
+
+# --- Go ---
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+coverage.out
+coverage.html
+backend/backend
+backend/wzos-panel
+wzos-panel-linux-*
+
+# --- Frontend (Angular) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+
+# --- Build / deploy outputs ---
+# Populated by `npm run build` + deploy.ps1 (`go:embed dist/*` at compile time)
+backend/dist/
+deploy.tgz
+
+# --- Local SQLite (dev tools / local runs) ---
+wzos.db
+wzos.db-*
+**/*.db-journal
+**/*.db-wal
+**/*.db-shm
+
+# --- Logs ---
+*.log
+
+# --- Local AI assistant settings ---
+.claude/

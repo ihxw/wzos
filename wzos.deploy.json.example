@@ -1,0 +1,5 @@
+{
+  "targetHost": "192.168.1.150",
+  "user": "root",
+  "arch": "arm64"
+}
