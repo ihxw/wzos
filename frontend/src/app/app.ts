@@ -12,6 +12,7 @@ import { FileManagerComponent } from './components/file-manager/file-manager';
 import { MediaViewerComponent } from './components/media-viewer/media-viewer';
 import { SystemSettingsComponent } from './apps/system-settings/system-settings';
 import { AppManagerComponent } from './apps/app-manager/app-manager';
+import { FirewallComponent } from './apps/firewall/firewall';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NzDropDownModule, NzContextMenuService, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -337,7 +338,8 @@ export class App implements OnInit {
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
       'system-settings': SystemSettingsComponent,
-      'app-manager': AppManagerComponent
+      'app-manager': AppManagerComponent,
+      'firewall': FirewallComponent
     };
 
     const componentType = componentMap[app.id];
@@ -476,7 +478,8 @@ export class App implements OnInit {
       'file-manager': FileManagerComponent,
       'image-viewer': MediaViewerComponent,
       'system-settings': SystemSettingsComponent,
-      'app-manager': AppManagerComponent
+      'app-manager': AppManagerComponent,
+      'firewall': FirewallComponent
     };
     const componentType = componentMap[app.id];
     if (!componentType) return;

@@ -13,9 +13,11 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	authService := core.NewAuthService(db.DB)
 	systemInfoService := core.NewSystemInfoService()
+	firewallService := core.NewFirewallService()
 
 	authHandler := api.NewAuthHandler(authService)
 	systemInfoHandler := api.NewSystemInfoHandler(systemInfoService)
+	firewallHandler := api.NewFirewallHandler(firewallService)
 
 	r.POST("/api/login", authHandler.Login)
 
@@ -27,6 +29,8 @@ func SetupRoutes(r *gin.Engine) {
 	auth.Use(middleware.JWTAuth())
 	{
 		auth.GET("/sysinfo/overview", systemInfoHandler.GetOverview)
+		auth.GET("/firewall/status", firewallHandler.GetStatus)
+		auth.POST("/firewall/enable", firewallHandler.SetEnabled)
 	}
 
 	ws.RegisterTerminalRoute(r)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/wzos/backend/db"
@@ -15,10 +14,7 @@ func main() {
 	r := gin.Default()
 
 	routes.SetupRoutes(r)
-
-	if _, err := os.Stat("dist"); err == nil {
-		SetupEmbeddedFrontend(r)
-	}
+	SetupEmbeddedFrontend(r)
 
 	log.Println("Backend server starting on :8080")
 	if err := r.Run(":8080"); err != nil {

@@ -3,16 +3,24 @@ package db
 import (
 	"log"
 	"os"
+	"path/filepath"
 
+	"github.com/glebarez/sqlite"
 	"github.com/wzos/backend/models"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func InitDB() {
-	dbPath := "wzos.db"
+	dataDir := os.Getenv("WZOS_DATA_DIR")
+	if dataDir == "" {
+		dataDir = "."
+	}
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		log.Fatalf("Failed to create data directory: %v", err)
+	}
+	dbPath := filepath.Join(dataDir, "wzos.db")
 
 	var err error
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
